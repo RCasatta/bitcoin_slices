@@ -1,0 +1,68 @@
+#![cfg_attr(bench, feature(test))]
+#![cfg_attr(not(test), no_std)]
+
+#[cfg(bench)]
+extern crate test;
+
+pub mod bsl;
+mod error;
+mod number;
+mod slice;
+
+pub use error::Error;
+
+pub const EMPTY: [u8; 0] = [];
+
+type SResult<'a, T> = Result<ParseResult<'a, T>, Error>;
+
+trait Parse<'a, T: Parse<'a, T>>: AsRef<[u8]> {
+    /// Parse a slice of bytes into an object T.
+    /// This function is the opposite of `as_ref()`
+    fn parse(slice: &'a [u8]) -> SResult<T>;
+
+    fn len(&self) -> usize {
+        self.as_ref().len()
+    }
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct ParseResult<'a, T> {
+    remaining: &'a [u8],
+    parsed: T,
+    consumed: usize,
+}
+
+impl<'a, T> ParseResult<'a, T> {
+    fn new(remaining: &'a [u8], parsed: T, consumed: usize) -> Self {
+        ParseResult {
+            remaining,
+            parsed,
+            consumed,
+        }
+    }
+    fn map<Y, O: FnOnce(Self) -> Y>(self, op: O) -> Y {
+        op(self)
+    }
+}
+
+#[cfg(any(test, bench))]
+pub mod test_common {
+    use hex_lit::hex;
+
+    use crate::{ParseResult, EMPTY};
+
+    pub const GENESIS_TX: [u8; 204] = hex!("01000000010000000000000000000000000000000000000000000000000000000000000000ffffffff4d04ffff001d0104455468652054696d65732030332f4a616e2f32303039204368616e63656c6c6f72206f6e206272696e6b206f66207365636f6e64206261696c6f757420666f722062616e6b73ffffffff0100f2052a01000000434104678afdb0fe5548271967f1a67130b7105cd6a828e03909a67962e0ea1f61deb649f6bc3f4cef38c4f35504e51ec112de5c384df7ba0b8d578a4c702b6bf11d5fac00000000");
+    pub const GENESIS_BLOCK_HEADER: [u8; 80] = hex!("0100000000000000000000000000000000000000000000000000000000000000000000003ba3edfd7a7b12b27ac72c3e67768f617fc81bc3888a51323a9fb8aa4b1e5e4a29ab5f49ffff001d1dac2b7c");
+    pub const GENESIS_BLOCK: [u8;285] = hex!("0100000000000000000000000000000000000000000000000000000000000000000000003ba3edfd7a7b12b27ac72c3e67768f617fc81bc3888a51323a9fb8aa4b1e5e4a29ab5f49ffff001d1dac2b7c0101000000010000000000000000000000000000000000000000000000000000000000000000ffffffff4d04ffff001d0104455468652054696d65732030332f4a616e2f32303039204368616e63656c6c6f72206f6e206272696e6b206f66207365636f6e64206261696c6f757420666f722062616e6b73ffffffff0100f2052a01000000434104678afdb0fe5548271967f1a67130b7105cd6a828e03909a67962e0ea1f61deb649f6bc3f4cef38c4f35504e51ec112de5c384df7ba0b8d578a4c702b6bf11d5fac00000000");
+
+    impl<'a, T: AsRef<[u8]>> ParseResult<'a, T> {
+        pub fn new_exact(parsed: T) -> Self {
+            let consumed = parsed.as_ref().len();
+            ParseResult {
+                remaining: &EMPTY,
+                parsed,
+                consumed,
+            }
+        }
+    }
+}
