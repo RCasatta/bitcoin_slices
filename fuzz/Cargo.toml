@@ -1,0 +1,97 @@
+[package]
+name = "bitcoin_slices-fuzz"
+version = "0.0.0"
+authors = ["Automatically generated"]
+publish = false
+edition = "2018"
+
+[package.metadata]
+cargo-fuzz = true
+
+[dependencies]
+libfuzzer-sys = "0.4"
+
+[dependencies.bitcoin_slices]
+path = ".."
+
+# Prevent this from interfering with workspaces
+[workspace]
+members = ["."]
+
+[[bin]]
+name = "fuzz_target_1"
+path = "fuzz_targets/fuzz_target_1.rs"
+test = false
+doc = false
+
+[[bin]]
+name = "tx_in"
+path = "fuzz_targets/tx_in.rs"
+test = false
+doc = false
+
+[[bin]]
+name = "tx_out"
+path = "fuzz_targets/tx_out.rs"
+test = false
+doc = false
+
+[[bin]]
+name = "len"
+path = "fuzz_targets/len.rs"
+test = false
+doc = false
+
+[[bin]]
+name = "transaction"
+path = "fuzz_targets/transaction.rs"
+test = false
+doc = false
+
+[[bin]]
+name = "witness"
+path = "fuzz_targets/witness.rs"
+test = false
+doc = false
+
+[[bin]]
+name = "block"
+path = "fuzz_targets/block.rs"
+test = false
+doc = false
+
+[[bin]]
+name = "witnesses"
+path = "fuzz_targets/witnesses.rs"
+test = false
+doc = false
+
+[[bin]]
+name = "tx_outs"
+path = "fuzz_targets/tx_outs.rs"
+test = false
+doc = false
+
+[[bin]]
+name = "tx_ins"
+path = "fuzz_targets/tx_ins.rs"
+test = false
+doc = false
+
+[[bin]]
+name = "block_header"
+path = "fuzz_targets/block_header.rs"
+test = false
+doc = false
+
+[[bin]]
+name = "script"
+path = "fuzz_targets/script.rs"
+test = false
+doc = false
+
+[[bin]]
+name = "out_point"
+path = "fuzz_targets/out_point.rs"
+test = false
+doc = false

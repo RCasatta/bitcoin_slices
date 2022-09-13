@@ -1,55 +1,70 @@
 use crate::bsl::{BlockHeader, Len, Transaction};
-use crate::ParseResult;
-use crate::{error::to_unknown, Parse};
+use crate::{EmptyVisitor, ParseResult, Visitor};
 
+/// A Bitcoin block.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Block<'a> {
     slice: &'a [u8],
     block_header: BlockHeader<'a>,
+    total_txs: Len<'a>,
 }
 
 impl<'a> Block<'a> {
-    #[cfg(feature = "hashes")]
+    /// Parse the block from the given slice.
+    pub fn parse(slice: &'a [u8]) -> crate::SResult<Self> {
+        Self::visit(slice, &mut EmptyVisitor {})
+    }
+    /// Visit the block from the given slice.
+    pub fn visit<'b, V: Visitor>(slice: &'a [u8], visit: &'b mut V) -> crate::SResult<'a, Self> {
+        let ParseResult {
+            remaining,
+            parsed: block_header,
+            consumed: _,
+        } = BlockHeader::visit(slice, visit)?;
+
+        let ParseResult {
+            mut remaining,
+            parsed: total_txs,
+            mut consumed,
+        } = Len::parse(remaining)?;
+
+        visit.visit_block_begin(total_txs.n() as usize);
+        for _ in 0..total_txs.n() {
+            let tx = Transaction::visit(remaining, visit)?;
+            remaining = tx.remaining;
+            consumed += tx.consumed;
+        }
+        consumed += 80;
+
+        let (slice, remaining) = slice.split_at(consumed);
+        let parsed = Block {
+            slice,
+            block_header,
+            total_txs,
+        };
+        Ok(ParseResult::new(remaining, parsed, consumed))
+    }
+
+    /// Returns the hash of this block
+    #[cfg(feature = "bitcoin_hashes")]
     pub fn block_hash(&self) -> bitcoin_hashes::sha256d::Hash {
         self.block_header.block_hash()
     }
 
-    pub fn total_transactions(&self) -> u64 {
-        self.len_transactions().n()
-    }
-    fn len_transactions(&self) -> Len {
-        Len::parse(&self.slice[80..])
-            .expect("slice verified during parsing")
-            .parsed
+    /// Calculate the block hash using the sha2 crate.
+    /// NOTE: the result type is not displayed backwards when converted to string.
+    #[cfg(feature = "sha2")]
+    pub fn block_hash_sha2(
+        &self,
+    ) -> sha2::digest::generic_array::GenericArray<u8, sha2::digest::typenum::U32> {
+        self.block_header.block_hash_sha2()
     }
 
-    pub fn transactions(&self) -> impl Iterator<Item = Transaction> {
-        let len_transactions = self.len_transactions();
-        let from = len_transactions.len() + 80;
-        TxIterator {
-            slice: &self.slice[from..],
-            n: len_transactions.n(),
-        }
+    /// Returns the total transactions in this block
+    pub fn total_transactions(&self) -> usize {
+        self.total_txs.n() as usize
     }
 }
-
-pub struct TxIterator<'a> {
-    slice: &'a [u8],
-    n: u64,
-}
-impl<'a> Iterator for TxIterator<'a> {
-    type Item = Transaction<'a>;
-
-    fn next(&mut self) -> Option<Self::Item> {
-        let transaction = Transaction::parse(self.slice).ok()?;
-        self.slice = transaction.remaining;
-        Some(transaction.parsed)
-    }
-    fn size_hint(&self) -> (usize, Option<usize>) {
-        (self.n as usize, Some(self.n as usize))
-    }
-}
-impl<'a> ExactSizeIterator for TxIterator<'a> {}
 
 impl<'a> AsRef<[u8]> for Block<'a> {
     fn as_ref(&self) -> &[u8] {
@@ -57,41 +72,12 @@ impl<'a> AsRef<[u8]> for Block<'a> {
     }
 }
 
-impl<'a> Parse<'a, Block<'a>> for Block<'a> {
-    fn parse(slice: &'a [u8]) -> crate::SResult<Block<'a>> {
-        let block_header = BlockHeader::parse(slice).map_err(to_unknown)?;
-        let ParseResult {
-            mut remaining,
-            parsed,
-            mut consumed,
-        } = Len::parse(block_header.remaining)?;
-        for _ in 0..parsed.n() {
-            let tx = Transaction::parse(remaining)?;
-            remaining = tx.remaining;
-            consumed += tx.consumed;
-        }
-        consumed += 80;
-
-        Ok(ParseResult::new(
-            &slice[consumed..],
-            Block {
-                slice,
-                block_header: block_header.parsed,
-            },
-            consumed,
-        ))
-    }
-}
-
 #[cfg(test)]
 mod test {
     use crate::{
-        bsl::{Block, BlockHeader},
+        bsl::{Block, BlockHeader, Len},
         test_common::GENESIS_BLOCK,
-        Parse,
     };
-
-    use crate::test_common::GENESIS_TX;
 
     #[test]
     fn parse_block() {
@@ -103,27 +89,29 @@ mod test {
             block.parsed,
             Block {
                 slice: &GENESIS_BLOCK,
-                block_header: block_header.parsed
+                block_header: block_header.parsed,
+                total_txs: Len::new(&[1u8], 1)
             }
         );
         assert_eq!(block.consumed, 285);
 
-        let mut iter = block.parsed.transactions();
-        let genesis_tx = iter.next().unwrap();
-        assert_eq!(genesis_tx.as_ref(), GENESIS_TX);
-        assert!(iter.next().is_none())
+        // let mut iter = block.parsed.transactions();
+        // let genesis_tx = iter.next().unwrap();
+        // assert_eq!(genesis_tx.as_ref(), GENESIS_TX);
+        // assert!(iter.next().is_none())
     }
 
     #[cfg(target_pointer_width = "64")]
     #[test]
     fn size_of() {
-        assert_eq!(std::mem::size_of::<Block>(), 48);
+        assert_eq!(std::mem::size_of::<Block>(), 72);
     }
 }
 
 #[cfg(bench)]
 mod bench {
-    use crate::{bsl::Block, Parse};
+    use crate::bsl::{Block, TxOut};
+    use crate::Visitor;
     use bitcoin::consensus::deserialize;
     use test::{black_box, Bencher};
 
@@ -146,22 +134,97 @@ mod bench {
     }
 
     #[bench]
-    pub fn block_iter_tx(bh: &mut Bencher) {
-        let block = Block::parse(BENCH_BLOCK).unwrap().parsed;
+    pub fn block_sum_outputs(bh: &mut Bencher) {
         bh.iter(|| {
-            for tx in block.transactions() {
-                black_box(&tx);
+            struct Sum(u64);
+            impl Visitor for Sum {
+                fn visit_tx_out(&mut self, _vout: usize, tx_out: &TxOut) {
+                    self.0 += tx_out.value();
+                }
             }
+            let mut sum = Sum(0);
+            let block = Block::visit(BENCH_BLOCK, &mut sum).unwrap();
+            assert_eq!(sum.0, 2883682728990);
+            black_box(&block);
         });
     }
 
     #[bench]
-    pub fn block_iter_tx_bitcoin(bh: &mut Bencher) {
-        let block: bitcoin::Block = deserialize(BENCH_BLOCK).unwrap();
+    pub fn block_sum_outputs_bitcoin(bh: &mut Bencher) {
         bh.iter(|| {
-            for tx in block.txdata.iter() {
-                black_box(&tx);
+            let block: bitcoin::Block = deserialize(BENCH_BLOCK).unwrap();
+            let sum: u64 = block
+                .txdata
+                .iter()
+                .flat_map(|t| t.output.iter())
+                .fold(0, |acc, e| acc + e.value);
+            assert_eq!(sum, 2883682728990);
+
+            black_box(&block);
+        });
+    }
+
+    #[cfg(feature = "bitcoin_hashes")]
+    #[bench]
+    pub fn hash_block_txs(bh: &mut Bencher) {
+        use bitcoin::hashes::sha256d;
+
+        bh.iter(|| {
+            struct VisitTx(Vec<sha256d::Hash>);
+            let mut v = VisitTx(vec![]);
+            impl crate::Visitor for VisitTx {
+                fn visit_block_begin(&mut self, total_transactions: usize) {
+                    self.0.reserve(total_transactions);
+                }
+                fn visit_transaction(&mut self, tx: &crate::bsl::Transaction) {
+                    self.0.push(tx.txid());
+                }
             }
+
+            let block = Block::visit(&BENCH_BLOCK[..], &mut v).unwrap();
+
+            assert_eq!(v.0.len(), 2500);
+
+            black_box((&block, v));
+        });
+    }
+
+    #[cfg(feature = "sha2")]
+    #[bench]
+    pub fn hash_block_txs_sha2(bh: &mut Bencher) {
+        bh.iter(|| {
+            struct VisitTx(
+                Vec<sha2::digest::generic_array::GenericArray<u8, sha2::digest::typenum::U32>>,
+            );
+            let mut v = VisitTx(vec![]);
+            impl crate::Visitor for VisitTx {
+                fn visit_block_begin(&mut self, total_transactions: usize) {
+                    self.0.reserve(total_transactions);
+                }
+                fn visit_transaction(&mut self, tx: &crate::bsl::Transaction) {
+                    self.0.push(tx.txid_sha2());
+                }
+            }
+
+            let block = Block::visit(&BENCH_BLOCK[..], &mut v).unwrap();
+
+            assert_eq!(v.0.len(), 2500);
+
+            black_box((&block, v));
+        });
+    }
+
+    #[bench]
+    pub fn hash_block_txs_bitcoin(bh: &mut Bencher) {
+        bh.iter(|| {
+            let block: bitcoin::Block = deserialize(BENCH_BLOCK).unwrap();
+            let mut tx_hashes = Vec::with_capacity(block.txdata.len());
+
+            for tx in block.txdata.iter() {
+                tx_hashes.push(tx.txid())
+            }
+            assert_eq!(tx_hashes.len(), 2500);
+            black_box((&block, tx_hashes));
         });
     }
 }

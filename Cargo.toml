@@ -2,15 +2,22 @@
 name = "bitcoin_slices"
 version = "0.1.0"
 edition = "2021"
-
-# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+authors = ["Riccardo Casatta <riccardo@casatta.it>"]
+description = "Parse Bitcoin objects without allocations"
+repository = "https://github.com/RCasatta/bitcoin_slices"
+documentation = "https://docs.rs/bitcoin_slices/"
+keywords = ["bitcoin", "blocks", "transaction", "parse", "slices"]
+readme = "README.md"
+license = "MIT"
 
 [dependencies]
 bitcoin_hashes = { version="0.11.0", optional = true }
+sha2 = { version= "0.10.6", optional = true }
 
 [features]
-default = [ "hashes" ]
-hashes = [ "bitcoin_hashes" ]
+default = [ ]
+bitcoin_hashes = [ "dep:bitcoin_hashes" ]
+sha2 = [ "dep:sha2" ]
 
 [dev-dependencies]
 hex_lit = {version = "0.1.1", features = [ "rust_v_1_46" ] }

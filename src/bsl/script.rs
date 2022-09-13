@@ -1,5 +1,7 @@
-use crate::{bsl::Len, error::to_unknown, slice::read_slice, Parse, ParseResult, SResult};
+use crate::{bsl::Len, slice::read_slice, ParseResult, SResult};
 
+/// The Script, this type could be found in transaction outputs as `script_pubkey` or in transaction
+/// inputs as `script_sig`
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Script<'a> {
     slice: &'a [u8],
@@ -7,6 +9,21 @@ pub struct Script<'a> {
 }
 
 impl<'a> Script<'a> {
+    /// Parse a script from the slice.
+    pub fn parse(slice: &'a [u8]) -> SResult<Self> {
+        let len = Len::parse(slice)?;
+        Ok(
+            read_slice(len.remaining, len.parsed.n() as usize)?.map(|s| ParseResult {
+                remaining: s.remaining,
+                parsed: Script {
+                    slice: &slice[..len.parsed.slice_len()],
+                    from: len.parsed.as_ref().len(),
+                },
+                consumed: len.consumed + s.consumed,
+            }),
+        )
+    }
+    /// return the script bytes (exclude the compact int representing the length)
     pub fn script(&self) -> &[u8] {
         &self.slice[self.from..]
     }
@@ -18,26 +35,9 @@ impl<'a> AsRef<[u8]> for Script<'a> {
     }
 }
 
-impl<'a> Parse<'a, Script<'a>> for Script<'a> {
-    fn parse(slice: &'a [u8]) -> SResult<Script<'a>> {
-        let len = Len::parse(slice).map_err(to_unknown)?;
-        Ok(
-            read_slice(len.remaining, len.parsed.n() as usize)?.map(|s| ParseResult {
-                remaining: s.remaining,
-                parsed: Script {
-                    slice: &slice[..len.parsed.slice_len()],
-                    from: len.parsed.len(),
-                },
-                consumed: len.consumed + s.consumed,
-            }),
-        )
-    }
-}
-
 #[cfg(test)]
-
 mod test {
-    use crate::{bsl::Script, Error, Parse};
+    use crate::{bsl::Script, Error};
 
     fn check(slice: &[u8], script_slice: &[u8]) {
         let script = Script::parse(slice);

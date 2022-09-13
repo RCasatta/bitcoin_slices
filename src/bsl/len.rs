@@ -1,8 +1,10 @@
 use crate::{
     number::{read_u16, read_u32, read_u64, read_u8},
-    Parse, ParseResult, SResult,
+    ParseResult, SResult,
 };
 
+/// The bitcoin compact int encoding, up to 253 it consumes 1 byte, then there are markers for
+/// `u16`, `u32` and `u64`.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Len<'a> {
     slice: &'a [u8],
@@ -10,6 +12,21 @@ pub struct Len<'a> {
 }
 
 impl<'a> Len<'a> {
+    /// Try to parse a compact int from the `slice`
+    pub fn parse(slice: &[u8]) -> SResult<Len> {
+        let p = read_u8(slice)?;
+        let (n, consumed) = match p.parsed {
+            0xFFu8 => read_u64(p.remaining)?.map(|p| (p.parsed, 9)),
+            0xFEu8 => read_u32(p.remaining)?.map(|p| (p.parsed as u64, 5)),
+            0xFDu8 => read_u16(p.remaining)?.map(|p| (p.parsed as u64, 3)),
+            x => (x as u64, 1),
+        };
+        let (slice, remaining) = slice.split_at(consumed);
+        let len = Len { slice, n };
+        Ok(ParseResult::new(remaining, len, consumed))
+    }
+
+    /// The value encoded in this compact int
     pub fn n(&self) -> u64 {
         self.n
     }
@@ -27,26 +44,6 @@ impl<'a> AsRef<[u8]> for Len<'a> {
     }
 }
 
-impl<'a> Parse<'a, Len<'a>> for Len<'a> {
-    fn parse(slice: &[u8]) -> SResult<Len> {
-        let p = read_u8(slice)?;
-        let (n, consumed) = match p.parsed {
-            0xFFu8 => read_u64(p.remaining)?.map(|p| (p.parsed, 9)),
-            0xFEu8 => read_u32(p.remaining)?.map(|p| (p.parsed as u64, 5)),
-            0xFDu8 => read_u16(p.remaining)?.map(|p| (p.parsed as u64, 3)),
-            __ => (p.parsed as u64, 1),
-        };
-        Ok(ParseResult::new(
-            &slice[consumed..],
-            Len {
-                slice: &slice[..consumed],
-                n,
-            },
-            consumed,
-        ))
-    }
-}
-
 #[cfg(test)]
 impl<'a> Len<'a> {
     pub(crate) fn new(slice: &[u8], n: u64) -> Len {
@@ -56,7 +53,7 @@ impl<'a> Len<'a> {
 
 #[cfg(test)]
 mod test {
-    use crate::{bsl::Len, Error, Parse, ParseResult};
+    use crate::{bsl::Len, Error, ParseResult};
 
     fn check(slice: &[u8], n: u64) {
         assert_eq!(

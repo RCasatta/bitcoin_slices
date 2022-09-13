@@ -1,16 +1,11 @@
-use crate::{
-    error::{to_unknown, to_unknown_if},
-    slice::read_slice,
-    Parse, ParseResult, SResult,
-};
+use crate::bsl::Len;
+use crate::{slice::read_slice, EmptyVisitor, ParseResult, SResult, Visitor};
 
-use super::Len;
-
+/// A single witness associated with a single transaction input.
+/// Logically is a vector of bytes vector.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Witness<'a> {
     slice: &'a [u8],
-    from: usize,
-    n: u64,
 }
 
 impl<'a> AsRef<[u8]> for Witness<'a> {
@@ -19,89 +14,43 @@ impl<'a> AsRef<[u8]> for Witness<'a> {
     }
 }
 
-impl<'a> Parse<'a, Witness<'a>> for Witness<'a> {
-    fn parse(slice: &'a [u8]) -> SResult<Witness<'a>> {
+impl<'a> Witness<'a> {
+    /// Parse the witness in the slice
+    pub fn parse(slice: &'a [u8]) -> SResult<Self> {
+        Self::visit(slice, &mut EmptyVisitor {})
+    }
+    /// Visit the witness in the slice
+    pub fn visit<'b, V: Visitor>(slice: &'a [u8], visit: &'b mut V) -> SResult<'a, Witness<'a>> {
         let ParseResult {
             mut remaining,
             parsed,
             mut consumed,
-        } = Len::parse(slice).map_err(to_unknown)?;
+        } = Len::parse(slice)?;
 
-        for i in 1..=parsed.n() {
-            let len = Len::parse(remaining).map_err(to_unknown)?;
-            let sl = read_slice(len.remaining, len.parsed.n() as usize)
-                .map_err(|e| to_unknown_if(e, i != parsed.n()))?;
+        visit.visit_witness_total_element(parsed.n() as usize);
+        for i in 0..parsed.n() {
+            let len = Len::parse(remaining)?;
+            let sl = read_slice(len.remaining, len.parsed.n() as usize)?;
             remaining = sl.remaining;
             consumed += len.parsed.slice_len();
+            visit.visit_witness_element(i as usize, sl.parsed);
         }
 
-        Ok(ParseResult::new(
-            &slice[consumed..],
-            Witness {
-                slice: &slice[..consumed],
-                from: parsed.len(),
-                n: parsed.n(),
-            },
-            consumed,
-        ))
+        let witness = Witness {
+            slice: &slice[..consumed],
+        };
+        Ok(ParseResult::new(&slice[consumed..], witness, consumed))
     }
-}
-impl<'a> Witness<'a> {
+    /// If this witness contain no elements
     pub fn is_empty(&self) -> bool {
-        self.n == 0
-    }
-}
-
-#[derive(Debug, Clone, PartialEq, Eq, Default)]
-pub struct Witnesses<'a> {
-    slice: &'a [u8],
-    all_empty: bool,
-}
-impl<'a> AsRef<[u8]> for Witnesses<'a> {
-    fn as_ref(&self) -> &[u8] {
-        self.slice
-    }
-}
-impl<'a> Witnesses<'a> {
-    pub fn parse(slice: &'a [u8], n: usize) -> SResult<Witnesses<'a>> {
-        let mut remaining = slice;
-        let mut consumed = 0;
-        let mut all_empty = true;
-        for _ in 0..n {
-            let witness = Witness::parse(remaining)?;
-            remaining = witness.remaining;
-            consumed += witness.consumed;
-            if !witness.parsed.is_empty() {
-                all_empty = false;
-            }
-        }
-        Ok(ParseResult::new(
-            &slice[consumed..],
-            Witnesses {
-                slice: &slice[..consumed],
-                all_empty,
-            },
-            consumed,
-        ))
-    }
-
-    pub fn all_empty(&self) -> bool {
-        self.all_empty
-    }
-
-    pub fn is_segwit(&self) -> bool {
-        self.slice != &[]
+        self.slice[0] == 0
     }
 }
 
 #[cfg(test)]
 mod test {
+    use crate::{bsl::Witness, ParseResult, Visitor};
     use hex_lit::hex;
-
-    use crate::{
-        bsl::{Witness, Witnesses},
-        Parse, ParseResult, EMPTY,
-    };
 
     #[test]
     fn parse_witness() {
@@ -109,8 +58,6 @@ mod test {
 
         let expected = Witness {
             slice: &witness[..],
-            from: 1,
-            n: 2,
         };
 
         assert_eq!(
@@ -120,11 +67,19 @@ mod test {
     }
 
     #[test]
-    fn parse_witnesses() {
-        let witnesses_bytes = hex!("01000201000100");
-        let witnesses = Witnesses::parse(&witnesses_bytes[..], 2).unwrap();
-        assert_eq!(witnesses.remaining, &EMPTY[..]);
-        assert_eq!(witnesses.parsed.as_ref(), &witnesses_bytes[..]);
-        assert_eq!(witnesses.consumed, 7);
+    fn visit_witness() {
+        let witness = hex!("0201000101");
+        struct WitnessVisititor(usize);
+        impl Visitor for WitnessVisititor {
+            fn visit_witness_total_element(&mut self, witness_total: usize) {
+                assert_eq!(witness_total, 2);
+            }
+            fn visit_witness_element(&mut self, witness_i: usize, witness_element: &[u8]) {
+                assert_eq!(witness_i, self.0);
+                assert_eq!(witness_element, &[self.0 as u8]);
+                self.0 += 1;
+            }
+        }
+        Witness::visit(&witness[..], &mut WitnessVisititor(0)).unwrap();
     }
 }
