@@ -13,7 +13,7 @@ extern crate test;
 
 pub mod bsl;
 mod error;
-mod number;
+pub mod number;
 mod slice;
 mod visit;
 
@@ -46,11 +46,11 @@ impl<'a, T> ParseResult<'a, T> {
         op(self)
     }
     /// returns the remaining slice, which is empty if all the bytes in the slice have been used.
-    pub fn remaining(&self) -> &[u8] {
+    pub fn remaining(&self) -> &'a [u8] {
         self.remaining
     }
     /// returns the object parsed
-    pub fn parsed(&self) -> &T {
+    pub fn parsed(&'a self) -> &'a T {
         &self.parsed
     }
     /// returns the byte used to parse `T`

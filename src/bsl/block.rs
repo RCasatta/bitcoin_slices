@@ -64,6 +64,11 @@ impl<'a> Block<'a> {
     pub fn total_transactions(&self) -> usize {
         self.total_txs.n() as usize
     }
+
+    /// Returns the header in this block
+    pub fn header(&self) -> &BlockHeader {
+        &self.block_header
+    }
 }
 
 impl<'a> AsRef<[u8]> for Block<'a> {

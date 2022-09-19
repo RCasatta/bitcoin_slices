@@ -28,7 +28,7 @@ impl RotateBuffer {
             self.end += bytes_read;
             print!("produced {} bytes. ", bytes_read);
         } else if length < self.start {
-            let (first, second) = self.data.split_at_mut(self.start);
+            let (first, second) = self.data.split_at_mut(self.start); // copy_within ?
             let length = self.end - self.start;
             first[..length].copy_from_slice(&second[..length]);
             self.start = 0;
