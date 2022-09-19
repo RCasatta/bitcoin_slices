@@ -1,12 +1,16 @@
+//! Contains methods to read numbers (u8,u16,u32,u64,i32) from slices
+
 use core::convert::TryInto;
 
 use crate::{slice::read_slice, ParseResult, SResult};
 
+/// Read an u8 from the slice
 pub fn read_u8(slice: &[u8]) -> SResult<u8> {
     let p = read_slice(slice, 1)?;
     Ok(ParseResult::new(p.remaining, p.parsed[0], p.consumed))
 }
 
+/// Read an u16 from the slice
 pub fn read_u16(slice: &[u8]) -> SResult<u16> {
     let p = read_slice(slice, 2)?;
     Ok(ParseResult::new(
@@ -16,6 +20,7 @@ pub fn read_u16(slice: &[u8]) -> SResult<u16> {
     ))
 }
 
+/// Read an u32 from the slice
 pub fn read_u32(slice: &[u8]) -> SResult<u32> {
     let p = read_slice(slice, 4)?;
     Ok(ParseResult::new(
@@ -25,6 +30,7 @@ pub fn read_u32(slice: &[u8]) -> SResult<u32> {
     ))
 }
 
+/// Read an u64 from the slice
 pub fn read_u64(slice: &[u8]) -> SResult<u64> {
     let p = read_slice(slice, 8)?;
     Ok(ParseResult::new(
@@ -34,6 +40,7 @@ pub fn read_u64(slice: &[u8]) -> SResult<u64> {
     ))
 }
 
+/// Read an i32 from the slice
 pub fn read_i32(slice: &[u8]) -> SResult<i32> {
     let p = read_slice(slice, 4)?;
     Ok(ParseResult::new(
