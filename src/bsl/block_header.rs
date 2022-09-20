@@ -1,7 +1,7 @@
 use crate::{
     number::{read_i32, read_u32},
     slice::read_slice,
-    EmptyVisitor, ParseResult, SResult, Visitor,
+    ParseResult, SResult, Visit, Visitor,
 };
 
 /// The block header.
@@ -14,14 +14,9 @@ pub struct BlockHeader<'a> {
     nonce: u32,
 }
 
-impl<'a> BlockHeader<'a> {
-    /// Parse the block header from the slice
-    pub fn parse(slice: &'a [u8]) -> SResult<Self> {
-        Self::visit(slice, &mut EmptyVisitor {})
-    }
-
+impl<'a> Visit<'a, BlockHeader<'a>> for BlockHeader<'a> {
     /// Visit the block header from the slice
-    pub fn visit<'b, V: Visitor>(slice: &'a [u8], visit: &'b mut V) -> SResult<'a, Self> {
+    fn visit<'b, V: Visitor>(slice: &'a [u8], visit: &'b mut V) -> SResult<'a, Self> {
         let version = read_i32(slice)?;
         let hashes = read_slice(version.remaining, 64)?;
         let time = read_u32(hashes.remaining)?;
@@ -37,7 +32,8 @@ impl<'a> BlockHeader<'a> {
         visit.visit_block_header(&header);
         Ok(ParseResult::new(nonce.remaining, header, 80))
     }
-
+}
+impl<'a> BlockHeader<'a> {
     /// Returns the block header version.
     pub fn version(&self) -> i32 {
         self.version
@@ -98,7 +94,7 @@ impl<'a> AsRef<[u8]> for BlockHeader<'a> {
 
 #[cfg(test)]
 mod test {
-    use crate::{bsl::BlockHeader, test_common::GENESIS_BLOCK_HEADER};
+    use crate::{bsl::BlockHeader, test_common::GENESIS_BLOCK_HEADER, Visit};
 
     use hex_lit::hex;
 

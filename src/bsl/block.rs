@@ -82,6 +82,7 @@ mod test {
     use crate::{
         bsl::{Block, BlockHeader, Len},
         test_common::GENESIS_BLOCK,
+        Visit,
     };
 
     #[test]
