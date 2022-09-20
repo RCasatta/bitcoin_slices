@@ -1,5 +1,5 @@
 use crate::bsl::{BlockHeader, Len, Transaction};
-use crate::{EmptyVisitor, ParseResult, Visitor};
+use crate::{EmptyVisitor, ParseResult, Visit, Visitor};
 
 /// A Bitcoin block.
 #[derive(Debug, Clone, PartialEq, Eq)]

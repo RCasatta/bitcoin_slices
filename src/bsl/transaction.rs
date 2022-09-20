@@ -3,7 +3,7 @@ use core::num::NonZeroU32;
 use crate::{
     bsl::{TxIns, TxOuts, Witnesses},
     number::{read_i32, read_u32, read_u8},
-    EmptyVisitor, Error, ParseResult, SResult, Visitor,
+    Error, ParseResult, SResult, Visit, Visitor,
 };
 
 /// A Bitcoin transaction
@@ -16,13 +16,9 @@ pub struct Transaction<'a> {
     inputs_outputs_len: Option<NonZeroU32>,
 }
 
-impl<'a> Transaction<'a> {
-    /// Parse the transaction in the slice
-    pub fn parse(slice: &'a [u8]) -> SResult<Self> {
-        Self::visit(slice, &mut EmptyVisitor {})
-    }
+impl<'a> Visit<'a, Transaction<'a>> for Transaction<'a> {
     /// Visit the transaction in the slice
-    pub fn visit<'b, V: Visitor>(slice: &'a [u8], visit: &'b mut V) -> SResult<'a, Self> {
+    fn visit<'b, V: Visitor>(slice: &'a [u8], visit: &'b mut V) -> SResult<'a, Self> {
         let version = read_i32(slice)?;
         let inputs = TxIns::visit(version.remaining, visit)?;
         if inputs.parsed.is_empty() {
@@ -65,7 +61,8 @@ impl<'a> Transaction<'a> {
             Ok(ParseResult::new(&slice[consumed..], tx, consumed))
         }
     }
-
+}
+impl<'a> Transaction<'a> {
     /// Returns the transaction version.
     pub fn version(&self) -> i32 {
         read_i32(&self.slice[..4])
@@ -136,7 +133,7 @@ impl<'a> AsRef<[u8]> for Transaction<'a> {
 
 #[cfg(test)]
 mod test {
-    use crate::{bsl::Transaction, test_common::GENESIS_TX};
+    use crate::{bsl::Transaction, test_common::GENESIS_TX, Visit};
     use hex_lit::hex;
 
     #[test]
@@ -200,6 +197,7 @@ mod test {
 #[cfg(bench)]
 mod bench {
     use crate::bsl::Transaction;
+    use crate::Visit;
     use bitcoin::consensus::deserialize;
     use hex_lit::hex;
     use test::{black_box, Bencher};

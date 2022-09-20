@@ -17,10 +17,20 @@ pub mod number;
 mod slice;
 mod visit;
 
+#[cfg(test)]
+mod rotate;
+
 pub use error::Error;
 pub use visit::{EmptyVisitor, Visitor};
 
 type SResult<'a, T> = Result<ParseResult<'a, T>, Error>;
+
+trait Visit<'a, T> {
+    fn parse(slice: &'a [u8]) -> SResult<T> {
+        Self::visit(slice, &mut EmptyVisitor {})
+    }
+    fn visit<'b, V: Visitor>(slice: &'a [u8], visit: &'b mut V) -> SResult<'a, T>;
+}
 
 /// Every `parse` or `visit` functions on success return this struct.
 /// It contains the object parsed `T` the remaining bytes (empty slice if all bytes in the slice are
