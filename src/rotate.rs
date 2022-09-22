@@ -27,6 +27,18 @@ impl fmt::Debug for RotateBuffer {
     }
 }
 
+trait VisitType<'a> {
+    type Visitor: Visit<'a>;
+}
+trait VisitAny: for<'any> VisitType<'any> {}
+type VisitorOf<'a, V> = <V as VisitType<'a>>::Visitor;
+
+struct BlockHeaderRep;
+impl<T: ?Sized> VisitAny for T where for<'any> T: VisitType<'any> {}
+impl<'a> VisitType<'a> for BlockHeaderRep {
+    type Visitor = BlockHeader<'a>;
+}
+
 impl RotateBuffer {
     pub fn new(buffer_size: usize, min_available: usize, read_chunk_size: usize) -> Self {
         Self {
@@ -64,11 +76,12 @@ impl RotateBuffer {
         self.end - self.start
     }
 
-    fn consume<'a, P: Visit<'a, P>, V: Visitor>(&'a mut self, visit: &mut V) -> bool {
+    fn consume<'a, P: VisitAny, V: Visitor>(&'a mut self, visit: &mut V) -> bool {
         if self.len() < self.min_available {
             false
         } else {
-            let parsed = P::visit(&self.buffer[self.start..self.end], visit).unwrap();
+            let parsed =
+                VisitorOf::<'_, P>::visit(&self.buffer[self.start..self.end], visit).unwrap();
             self.start += parsed.consumed;
 
             println!("consumed {} bytes {:?}", parsed.consumed, self);
@@ -76,7 +89,7 @@ impl RotateBuffer {
         }
     }
 
-    pub fn read_and_visit<'a, P: Visit<'a, P>, R: Read, V: Visitor>(
+    pub fn read_and_visit<P: VisitAny, R: Read, V: Visitor>(
         &mut self,
         read: &mut R,
         visit: &mut V,
@@ -97,5 +110,5 @@ fn rotate_buffer() {
     let mut cursor = Cursor::new(read);
     let mut rot = RotateBuffer::new(1_000, 80, 200);
 
-    rot.read_and_visit::<BlockHeader, _, _>(&mut cursor, &mut EmptyVisitor {});
+    rot.read_and_visit::<BlockHeaderRep, _, _>(&mut cursor, &mut EmptyVisitor {});
 }
