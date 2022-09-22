@@ -25,11 +25,11 @@ pub use visit::{EmptyVisitor, Visitor};
 
 type SResult<'a, T> = Result<ParseResult<'a, T>, Error>;
 
-trait Visit<'a, T> {
-    fn parse(slice: &'a [u8]) -> SResult<'a, T> {
+trait Visit<'a>: Sized {
+    fn parse(slice: &'a [u8]) -> SResult<'a, Self> {
         Self::visit(slice, &mut EmptyVisitor {})
     }
-    fn visit<'b, V: Visitor>(slice: &'a [u8], visit: &'b mut V) -> SResult<'a, T>;
+    fn visit<'b, V: Visitor>(slice: &'a [u8], visit: &'b mut V) -> SResult<'a, Self>;
 }
 
 /// Every `parse` or `visit` functions on success return this struct.

@@ -14,7 +14,7 @@ pub struct BlockHeader<'a> {
     nonce: u32,
 }
 
-impl<'a> Visit<'a, BlockHeader<'a>> for BlockHeader<'a> {
+impl<'a> Visit<'a> for BlockHeader<'a> {
     /// Visit the block header from the slice
     fn visit<'b, V: Visitor>(slice: &'a [u8], visit: &'b mut V) -> SResult<'a, Self> {
         let version = read_i32(slice)?;

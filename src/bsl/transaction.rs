@@ -16,7 +16,7 @@ pub struct Transaction<'a> {
     inputs_outputs_len: Option<NonZeroU32>,
 }
 
-impl<'a> Visit<'a, Transaction<'a>> for Transaction<'a> {
+impl<'a> Visit<'a> for Transaction<'a> {
     /// Visit the transaction in the slice
     fn visit<'b, V: Visitor>(slice: &'a [u8], visit: &'b mut V) -> SResult<'a, Self> {
         let version = read_i32(slice)?;
