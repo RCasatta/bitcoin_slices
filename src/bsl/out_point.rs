@@ -1,4 +1,4 @@
-use crate::{number::read_u32, slice::read_slice, ParseResult, SResult};
+use crate::{number::U32, slice::read_slice, ParseResult, SResult, Visit};
 
 /// The out point of a transaction input, identifying the previous output being spent
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -17,7 +17,7 @@ impl<'a> OutPoint<'a> {
     /// Parse the out point from the given slice
     pub fn parse(slice: &'a [u8]) -> SResult<Self> {
         let txid = read_slice(slice, 32usize)?;
-        let vout = read_u32(txid.remaining())?;
+        let vout = U32::parse(txid.remaining())?;
         Ok(ParseResult::new(
             vout.remaining(),
             OutPoint {

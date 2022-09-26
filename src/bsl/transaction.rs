@@ -2,8 +2,8 @@ use core::num::NonZeroU32;
 
 use crate::{
     bsl::{TxIns, TxOuts, Witnesses},
-    number::{read_i32, read_u32, read_u8},
-    EmptyVisitor, Error, ParseResult, SResult, Visitor,
+    number::{I32, U32, U8},
+    EmptyVisitor, Error, ParseResult, SResult, Visit, Visitor,
 };
 
 /// A Bitcoin transaction
@@ -23,10 +23,10 @@ impl<'a> Transaction<'a> {
     }
     /// Visit the transaction in the slice
     pub fn visit<'b, V: Visitor>(slice: &'a [u8], visit: &'b mut V) -> SResult<'a, Self> {
-        let version = read_i32(slice)?;
+        let version = I32::parse(slice)?;
         let inputs = TxIns::visit(version.remaining(), visit)?;
         if inputs.parsed().is_empty() {
-            let segwit_flag = read_u8(inputs.remaining())?;
+            let segwit_flag = U8::parse(inputs.remaining())?;
             let segwit_flag_u8 = segwit_flag.parsed().into();
             if segwit_flag_u8 == 1 {
                 let inputs = TxIns::visit(segwit_flag.remaining(), visit)?;
@@ -38,7 +38,7 @@ impl<'a> Transaction<'a> {
                     return Err(Error::SegwitFlagWithoutWitnesses);
                 }
 
-                let _locktime = read_u32(witnesses.remaining())?;
+                let _locktime = U32::parse(witnesses.remaining())?;
                 let consumed = 10 + inputs.consumed() + outputs.consumed() + witnesses.consumed();
                 let inputs_outputs_len =
                     inputs.parsed().as_ref().len() + outputs.parsed().as_ref().len();
@@ -54,7 +54,7 @@ impl<'a> Transaction<'a> {
             }
         } else {
             let outputs = TxOuts::visit(inputs.remaining(), visit)?;
-            let _locktime = read_u32(outputs.remaining())?;
+            let _locktime = U32::parse(outputs.remaining())?;
             let consumed = inputs.consumed() + outputs.consumed() + 8;
 
             let tx = Transaction {
@@ -68,7 +68,7 @@ impl<'a> Transaction<'a> {
 
     /// Returns the transaction version.
     pub fn version(&self) -> i32 {
-        read_i32(&self.slice[..4])
+        I32::parse(&self.slice[..4])
             .expect("slice length granted during parsing")
             .parsed_owned()
             .into()
@@ -77,7 +77,7 @@ impl<'a> Transaction<'a> {
     /// Returns the transaction locktime.
     pub fn locktime(&self) -> u32 {
         let from = self.slice.len() - 4; // slice length granted during parsing
-        read_u32(&self.slice[from..])
+        U32::parse(&self.slice[from..])
             .expect("slice length granted during parsing")
             .parsed_owned()
             .into()

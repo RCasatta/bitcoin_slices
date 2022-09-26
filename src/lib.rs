@@ -20,7 +20,7 @@ mod visit;
 
 pub use error::Error;
 pub use parse_result::ParseResult;
-pub use visit::{EmptyVisitor, Visitor};
+pub use visit::{EmptyVisitor, Visit, Visitor};
 
 type SResult<'a, T> = Result<ParseResult<'a, T>, Error>;
 

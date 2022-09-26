@@ -1,7 +1,7 @@
 use crate::{
-    number::{read_i32, read_u32},
+    number::{I32, U32},
     slice::read_slice,
-    EmptyVisitor, ParseResult, SResult, Visitor,
+    EmptyVisitor, ParseResult, SResult, Visit, Visitor,
 };
 
 /// The block header.
@@ -22,11 +22,11 @@ impl<'a> BlockHeader<'a> {
 
     /// Visit the block header from the slice
     pub fn visit<'b, V: Visitor>(slice: &'a [u8], visit: &'b mut V) -> SResult<'a, Self> {
-        let version = read_i32(slice)?;
+        let version = I32::parse(slice)?;
         let hashes = read_slice(version.remaining(), 64)?;
-        let time = read_u32(hashes.remaining())?;
-        let bits = read_u32(time.remaining())?;
-        let nonce = read_u32(bits.remaining())?;
+        let time = U32::parse(hashes.remaining())?;
+        let bits = U32::parse(time.remaining())?;
+        let nonce = U32::parse(bits.remaining())?;
         let header = BlockHeader {
             slice: &slice[..80],
             version: version.parsed().into(),

@@ -1,6 +1,6 @@
 use crate::{
-    number::{read_u16, read_u32, read_u64, read_u8},
-    ParseResult, SResult,
+    number::{U16, U32, U64, U8},
+    ParseResult, SResult, Visit,
 };
 
 /// The bitcoin compact int encoding, up to 253 it consumes 1 byte, then there are markers for
@@ -14,11 +14,11 @@ pub struct Len<'a> {
 impl<'a> Len<'a> {
     /// Try to parse a compact int from the `slice`
     pub fn parse(slice: &[u8]) -> SResult<Len> {
-        let p = read_u8(slice)?;
+        let p = U8::parse(slice)?;
         let (n, consumed) = match p.parsed().into() {
-            0xFFu8 => read_u64(p.remaining())?.map(|p| (u64::from(p.parsed()), 9)),
-            0xFEu8 => read_u32(p.remaining())?.map(|p| (u32::from(p.parsed()) as u64, 5)),
-            0xFDu8 => read_u16(p.remaining())?.map(|p| (u16::from(p.parsed()) as u64, 3)),
+            0xFFu8 => U64::parse(p.remaining())?.map(|p| (u64::from(p.parsed()), 9)),
+            0xFEu8 => U32::parse(p.remaining())?.map(|p| (u32::from(p.parsed()) as u64, 5)),
+            0xFDu8 => U16::parse(p.remaining())?.map(|p| (u16::from(p.parsed()) as u64, 3)),
             x => (x as u64, 1),
         };
         let (slice, remaining) = slice.split_at(consumed);

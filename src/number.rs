@@ -1,8 +1,8 @@
-//! Contains methods to read numbers (u8,u16,u32,u64,i32) from slices
+//! Contains methods to parse numbers (u8,u16,u32,u64,i32) from slices
 
 use core::convert::TryInto;
 
-use crate::{slice::read_slice, ParseResult, SResult};
+use crate::{slice::read_slice, visit::Visit, ParseResult, SResult};
 
 ///
 #[derive(Debug, PartialEq, Eq)]
@@ -32,46 +32,11 @@ impl From<u8> for U8 {
     }
 }
 
-/// Read an u8 from the slice
-pub fn read_u8(slice: &[u8]) -> SResult<U8> {
-    let p = read_slice(slice, 1)?;
-    Ok(ParseResult::new(p.remaining(), U8([p.parsed()[0]])))
-}
-
-/// Read an u16 from the slice
-pub fn read_u16(slice: &[u8]) -> SResult<U16> {
-    let p = read_slice(slice, 2)?;
-    Ok(ParseResult::new(
-        p.remaining(),
-        U16((*p.parsed()).try_into().expect("slice length is 2")),
-    ))
-}
-
-/// Read an u32 from the slice
-pub fn read_u32(slice: &[u8]) -> SResult<U32> {
-    let p = read_slice(slice, 4)?;
-    Ok(ParseResult::new(
-        p.remaining(),
-        U32((*p.parsed()).try_into().expect("slice length is 4")),
-    ))
-}
-
-/// Read an u64 from the slice
-pub fn read_u64(slice: &[u8]) -> SResult<U64> {
-    let p = read_slice(slice, 8)?;
-    Ok(ParseResult::new(
-        p.remaining(),
-        U64((*p.parsed()).try_into().expect("slice length is 8")),
-    ))
-}
-
-/// Read an i32 from the slice
-pub fn read_i32(slice: &[u8]) -> SResult<I32> {
-    let p = read_slice(slice, 4)?;
-    Ok(ParseResult::new(
-        p.remaining(),
-        I32((*p.parsed()).try_into().expect("slice length is 4")),
-    ))
+impl<'a> Visit<'a> for U8 {
+    fn visit<'b, V: crate::Visitor>(slice: &'a [u8], _visit: &'b mut V) -> SResult<'a, Self> {
+        let p = read_slice(slice, 1)?;
+        Ok(ParseResult::new(p.remaining(), U8([p.parsed()[0]])))
+    }
 }
 
 macro_rules! impl_number {
@@ -79,6 +44,21 @@ macro_rules! impl_number {
         ///
         #[derive(Debug, PartialEq, Eq)]
         pub struct $newtype([u8; $size]);
+
+        impl<'a> Visit<'a> for $newtype {
+            fn visit<'b, V: crate::Visitor>(
+                slice: &'a [u8],
+                _visit: &'b mut V,
+            ) -> SResult<'a, Self> {
+                let p = read_slice(slice, $size)?;
+                let remaining = p.remaining();
+                let arr = p
+                    .parsed_owned()
+                    .try_into()
+                    .expect(concat!("slice length is ", $size));
+                Ok(ParseResult::new(remaining, $newtype(arr)))
+            }
+        }
 
         impl From<$newtype> for $primitive {
             fn from(u: $newtype) -> Self {
@@ -119,83 +99,83 @@ mod test {
     #[test]
     fn numbers() {
         assert_eq!(
-            read_u8(&[0u8][..]),
+            U8::parse(&[0u8][..]),
             Ok(ParseResult::new(&[][..], 0u8.into()))
         );
         assert_eq!(
-            read_u8(&[1u8][..]),
+            U8::parse(&[1u8][..]),
             Ok(ParseResult::new(&[][..], 1u8.into()))
         );
         assert_eq!(
-            read_u8(&[255u8][..]),
+            U8::parse(&[255u8][..]),
             Ok(ParseResult::new(&[][..], 255u8.into()))
         );
         assert_eq!(
-            read_u8(&[1u8, 2][..]),
+            U8::parse(&[1u8, 2][..]),
             Ok(ParseResult::new(&[2u8][..], 1u8.into()))
         );
 
         assert_eq!(
-            read_u16(&[1u8, 0][..]),
+            U16::parse(&[1u8, 0][..]),
             Ok(ParseResult::new(&[][..], 1u16.into()))
         );
         assert_eq!(
-            read_u16(&[0u8, 1][..]),
+            U16::parse(&[0u8, 1][..]),
             Ok(ParseResult::new(&[][..], 256u16.into()))
         );
         assert_eq!(
-            read_u16(&[136u8, 19][..]),
+            U16::parse(&[136u8, 19][..]),
             Ok(ParseResult::new(&[][..], 5000u16.into()))
         );
         assert_eq!(
-            read_u16(&[136u8, 19, 2][..]),
+            U16::parse(&[136u8, 19, 2][..]),
             Ok(ParseResult::new(&[2u8][..], 5000u16.into()))
         );
 
         assert_eq!(
-            read_u32(&[1u8, 0, 0, 0][..]),
+            U32::parse(&[1u8, 0, 0, 0][..]),
             Ok(ParseResult::new(&[][..], 1u32.into()))
         );
         assert_eq!(
-            read_u32(&[0u8, 1, 0, 0][..]),
+            U32::parse(&[0u8, 1, 0, 0][..]),
             Ok(ParseResult::new(&[][..], 256u32.into()))
         );
         assert_eq!(
-            read_u32(&[136u8, 19, 0, 0][..]),
+            U32::parse(&[136u8, 19, 0, 0][..]),
             Ok(ParseResult::new(&[][..], 5000u32.into()))
         );
         assert_eq!(
-            read_u32(&[32u8, 161, 7, 0][..]),
+            U32::parse(&[32u8, 161, 7, 0][..]),
             Ok(ParseResult::new(&[][..], 500000u32.into()))
         );
         assert_eq!(
-            read_u32(&[10u8, 10, 10, 10][..]),
+            U32::parse(&[10u8, 10, 10, 10][..]),
             Ok(ParseResult::new(&[][..], 168430090u32.into()))
         );
 
         assert_eq!(
-            read_i32(&[255u8, 255, 255, 255][..]),
+            I32::parse(&[255u8, 255, 255, 255][..]),
             Ok(ParseResult::new(&[][..], (-1i32).into()))
         );
         assert_eq!(
-            read_i32(&[0u8, 255, 255, 255][..]),
+            I32::parse(&[0u8, 255, 255, 255][..]),
             Ok(ParseResult::new(&[][..], (-256i32).into()))
         );
         assert_eq!(
-            read_i32(&[120u8, 236, 255, 255][..]),
+            I32::parse(&[120u8, 236, 255, 255][..]),
             Ok(ParseResult::new(&[][..], (-5000i32).into()))
         );
         assert_eq!(
-            read_i32(&[32u8, 161, 7, 0][..]),
+            I32::parse(&[32u8, 161, 7, 0][..]),
             Ok(ParseResult::new(&[][..], 500000i32.into()))
         );
 
         assert_eq!(
-            read_u64(&[1u8, 0, 0, 0, 0, 0, 0, 0][..]),
+            U64::parse(&[1u8, 0, 0, 0, 0, 0, 0, 0][..]),
             Ok(ParseResult::new(&[][..], 1u64.into()))
         );
         assert_eq!(
-            read_u64(&[10u8, 10, 10, 10, 10, 10, 10, 10][..]),
+            U64::parse(&[10u8, 10, 10, 10, 10, 10, 10, 10][..]),
             Ok(ParseResult::new(&[][..], 723401728380766730u64.into()))
         );
     }
