@@ -1,4 +1,24 @@
+use crate::SResult;
+
 use super::bsl;
+
+/// Parse or Visit a blockchain object such as a Block or a Transaction.
+///
+/// Parse means simply reading the slice, while visiting allows to give a Visitor that would be
+/// called with the components of the object visited
+pub trait Visit<'a>: Sized + AsRef<[u8]> {
+    /// Parse the object from the slice
+    fn parse(slice: &'a [u8]) -> SResult<'a, Self> {
+        Self::visit(slice, &mut EmptyVisitor {})
+    }
+    /// Parse the obkect from the slice while calling methods on the given visitor
+    fn visit<'b, V: Visitor>(slice: &'a [u8], visit: &'b mut V) -> SResult<'a, Self>;
+
+    /// Return the serialized len of this object
+    fn len(&self) -> usize {
+        self.as_ref().len()
+    }
+}
 
 /// every `visit()` function take a `visit` parameter that implements this trait.
 ///
