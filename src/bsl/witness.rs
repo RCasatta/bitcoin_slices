@@ -21,25 +21,24 @@ impl<'a> Witness<'a> {
     }
     /// Visit the witness in the slice
     pub fn visit<'b, V: Visitor>(slice: &'a [u8], visit: &'b mut V) -> SResult<'a, Witness<'a>> {
-        let ParseResult {
-            mut remaining,
-            parsed,
-            mut consumed,
-        } = Len::parse(slice)?;
+        let len = Len::parse(slice)?;
+        let mut consumed = len.consumed();
+        let mut remaining = len.remaining();
+        let witness_total_element = len.parsed().n() as usize;
 
-        visit.visit_witness_total_element(parsed.n() as usize);
-        for i in 0..parsed.n() {
+        visit.visit_witness_total_element(witness_total_element);
+        for i in 0..witness_total_element {
             let len = Len::parse(remaining)?;
-            let sl = read_slice(len.remaining, len.parsed.n() as usize)?;
-            remaining = sl.remaining;
-            consumed += len.parsed.slice_len();
-            visit.visit_witness_element(i as usize, sl.parsed);
+            let sl = read_slice(len.remaining(), len.parsed().n() as usize)?;
+            remaining = sl.remaining();
+            consumed += len.parsed().slice_len();
+            visit.visit_witness_element(i, sl.parsed());
         }
 
         let witness = Witness {
             slice: &slice[..consumed],
         };
-        Ok(ParseResult::new(&slice[consumed..], witness, consumed))
+        Ok(ParseResult::new(&slice[consumed..], witness))
     }
     /// If this witness contain no elements
     pub fn is_empty(&self) -> bool {

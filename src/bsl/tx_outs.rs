@@ -15,26 +15,24 @@ impl<'a> TxOuts<'a> {
     }
     /// Visit the transaction outputs in the slice
     pub fn visit<'b, V: Visitor>(slice: &'a [u8], visit: &'b mut V) -> SResult<'a, Self> {
-        let ParseResult {
-            mut remaining,
-            parsed,
-            mut consumed,
-        } = Len::parse(slice)?;
-        visit.visit_tx_outs(parsed.n() as usize);
+        let len = Len::parse(slice)?;
+        let mut remaining = len.remaining();
+        let mut consumed = len.consumed();
+        let total_outputs = len.parsed().n() as usize;
+        visit.visit_tx_outs(total_outputs);
 
-        for i in 0..parsed.n() {
+        for i in 0..total_outputs {
             let tx_out = TxOut::parse(remaining)?;
-            remaining = tx_out.remaining;
-            consumed += tx_out.consumed;
-            visit.visit_tx_out(i as usize, &tx_out.parsed);
+            remaining = tx_out.remaining();
+            consumed += tx_out.consumed();
+            visit.visit_tx_out(i as usize, &tx_out.parsed());
         }
         Ok(ParseResult::new(
             &slice[consumed..],
             TxOuts {
                 slice: &slice[..consumed],
-                n: parsed.n() as usize,
+                n: total_outputs,
             },
-            consumed,
         ))
     }
     /// If there are no outputs.

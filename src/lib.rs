@@ -14,50 +14,15 @@ extern crate test;
 pub mod bsl;
 mod error;
 pub mod number;
+mod parse_result;
 mod slice;
 mod visit;
 
 pub use error::Error;
+pub use parse_result::ParseResult;
 pub use visit::{EmptyVisitor, Visitor};
 
 type SResult<'a, T> = Result<ParseResult<'a, T>, Error>;
-
-/// Every `parse` or `visit` functions on success return this struct.
-/// It contains the object parsed `T` the remaining bytes (empty slice if all bytes in the slice are
-/// consumed), and the bytes consumed.
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub struct ParseResult<'a, T> {
-    remaining: &'a [u8],
-    parsed: T,
-    consumed: usize,
-}
-
-impl<'a, T> ParseResult<'a, T> {
-    /// Creates a new ParseResult
-    fn new(remaining: &'a [u8], parsed: T, consumed: usize) -> Self {
-        ParseResult {
-            remaining,
-            parsed,
-            consumed,
-        }
-    }
-    /// map the `ParseResult` to another type `Y` as specified in the given function.
-    fn map<Y, O: FnOnce(Self) -> Y>(self, op: O) -> Y {
-        op(self)
-    }
-    /// returns the remaining slice, which is empty if all the bytes in the slice have been used.
-    pub fn remaining(&self) -> &'a [u8] {
-        self.remaining
-    }
-    /// returns the object parsed
-    pub fn parsed(&'a self) -> &'a T {
-        &self.parsed
-    }
-    /// returns the byte used to parse `T`
-    pub fn consumed(&self) -> usize {
-        self.consumed
-    }
-}
 
 #[cfg(any(test, bench))]
 pub mod test_common {
@@ -71,12 +36,7 @@ pub mod test_common {
 
     impl<'a, T: AsRef<[u8]>> ParseResult<'a, T> {
         pub fn new_exact(parsed: T) -> Self {
-            let consumed = parsed.as_ref().len();
-            ParseResult {
-                remaining: &[],
-                parsed,
-                consumed,
-            }
+            ParseResult::new(&[], parsed)
         }
     }
 

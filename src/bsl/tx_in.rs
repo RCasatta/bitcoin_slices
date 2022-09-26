@@ -17,16 +17,16 @@ impl<'a> TxIn<'a> {
     /// Parse a transaction input from this slice
     pub fn parse(slice: &'a [u8]) -> SResult<Self> {
         let out_point = OutPoint::parse(slice)?;
-        let script = Script::parse(out_point.remaining)?;
-        let sequence = read_u32(script.remaining)?;
-        let consumed = out_point.consumed + script.consumed + sequence.consumed;
+        let script = Script::parse(out_point.remaining())?;
+        let sequence = read_u32(script.remaining())?;
+        let consumed = out_point.consumed() + script.consumed() + sequence.consumed();
         let tx_in = TxIn {
             slice: &slice[..consumed],
-            prevout: out_point.parsed,
-            script_sig: script.parsed,
-            sequence: sequence.parsed,
+            prevout: out_point.parsed_owned(),
+            script_sig: script.parsed_owned(),
+            sequence: sequence.parsed().into(),
         };
-        Ok(ParseResult::new(sequence.remaining, tx_in, consumed))
+        Ok(ParseResult::new(sequence.remaining(), tx_in))
     }
     /// Returns the previous output index spent by this transaction input
     pub fn prevout(&self) -> &OutPoint {
@@ -67,15 +67,17 @@ mod test {
         let script_bytes = hex!("0100");
 
         let tx_in_expected = TxIn {
-            prevout: OutPoint::parse(&out_point_bytes[..]).unwrap().parsed,
-            script_sig: Script::parse(&script_bytes[..]).unwrap().parsed,
+            prevout: OutPoint::parse(&out_point_bytes[..])
+                .unwrap()
+                .parsed_owned(),
+            script_sig: Script::parse(&script_bytes[..]).unwrap().parsed_owned(),
             sequence: 4294967295u32,
             slice: &tx_in_bytes[..],
         };
         let tx_in_parsed = TxIn::parse(&tx_in_bytes[..]);
 
         assert_eq!(tx_in_parsed, Ok(ParseResult::new_exact(tx_in_expected)));
-        assert_eq!(tx_in_parsed.unwrap().parsed.as_ref().len(), 42);
+        assert_eq!(tx_in_parsed.unwrap().parsed().as_ref().len(), 42);
 
         assert_eq!(
             TxIn::parse(&tx_in_bytes[..tx_in_bytes.len() - 1]),

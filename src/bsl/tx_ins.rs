@@ -15,27 +15,25 @@ impl<'a> TxIns<'a> {
     }
     /// Visit the transactions inputs in the slice.
     pub fn visit<'b, V: Visitor>(slice: &'a [u8], visit: &'b mut V) -> SResult<'a, Self> {
-        let ParseResult {
-            mut remaining,
-            parsed,
-            mut consumed,
-        } = Len::parse(slice)?;
-        visit.visit_tx_ins(parsed.n() as usize);
+        let len = Len::parse(slice)?;
+        let mut consumed = len.consumed();
+        let mut remaining = len.remaining();
+        let total_inputs = len.parsed_owned().n() as usize;
+        visit.visit_tx_ins(total_inputs);
 
-        for i in 0..parsed.n() {
+        for i in 0..total_inputs {
             let tx_in = TxIn::parse(remaining)?;
-            remaining = tx_in.remaining;
-            consumed += tx_in.consumed;
-            visit.visit_tx_in(i as usize, &tx_in.parsed)
+            remaining = tx_in.remaining();
+            consumed += tx_in.consumed();
+            visit.visit_tx_in(i, tx_in.parsed())
         }
 
         Ok(ParseResult::new(
             &slice[consumed..],
             TxIns {
                 slice: &slice[..consumed],
-                n: parsed.n() as usize,
+                n: total_inputs,
             },
-            consumed,
         ))
     }
     /// Returns if there are no transaction inputs

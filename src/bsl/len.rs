@@ -15,15 +15,15 @@ impl<'a> Len<'a> {
     /// Try to parse a compact int from the `slice`
     pub fn parse(slice: &[u8]) -> SResult<Len> {
         let p = read_u8(slice)?;
-        let (n, consumed) = match p.parsed {
-            0xFFu8 => read_u64(p.remaining)?.map(|p| (p.parsed, 9)),
-            0xFEu8 => read_u32(p.remaining)?.map(|p| (p.parsed as u64, 5)),
-            0xFDu8 => read_u16(p.remaining)?.map(|p| (p.parsed as u64, 3)),
+        let (n, consumed) = match p.parsed().into() {
+            0xFFu8 => read_u64(p.remaining())?.map(|p| (u64::from(p.parsed()), 9)),
+            0xFEu8 => read_u32(p.remaining())?.map(|p| (u32::from(p.parsed()) as u64, 5)),
+            0xFDu8 => read_u16(p.remaining())?.map(|p| (u16::from(p.parsed()) as u64, 3)),
             x => (x as u64, 1),
         };
         let (slice, remaining) = slice.split_at(consumed);
         let len = Len { slice, n };
-        Ok(ParseResult::new(remaining, len, consumed))
+        Ok(ParseResult::new(remaining, len))
     }
 
     /// The value encoded in this compact int
@@ -73,14 +73,13 @@ mod test {
 
         assert_eq!(
             Len::parse(&[10u8, 0u8]),
-            Ok(ParseResult {
-                remaining: &[0u8][..],
-                parsed: Len {
+            Ok(ParseResult::new(
+                &[0u8][..],
+                Len {
                     slice: &[10u8],
                     n: 10
                 },
-                consumed: 1
-            })
+            ))
         );
         assert_eq!(Len::parse(&[0xFDu8]), Err(Error::Needed(2)));
         assert_eq!(Len::parse(&[0xFDu8, 0xFD]), Err(Error::Needed(1)));

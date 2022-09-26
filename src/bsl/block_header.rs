@@ -23,19 +23,19 @@ impl<'a> BlockHeader<'a> {
     /// Visit the block header from the slice
     pub fn visit<'b, V: Visitor>(slice: &'a [u8], visit: &'b mut V) -> SResult<'a, Self> {
         let version = read_i32(slice)?;
-        let hashes = read_slice(version.remaining, 64)?;
-        let time = read_u32(hashes.remaining)?;
-        let bits = read_u32(time.remaining)?;
-        let nonce = read_u32(bits.remaining)?;
+        let hashes = read_slice(version.remaining(), 64)?;
+        let time = read_u32(hashes.remaining())?;
+        let bits = read_u32(time.remaining())?;
+        let nonce = read_u32(bits.remaining())?;
         let header = BlockHeader {
             slice: &slice[..80],
-            version: version.parsed,
-            time: time.parsed,
-            bits: bits.parsed,
-            nonce: nonce.parsed,
+            version: version.parsed().into(),
+            time: time.parsed().into(),
+            bits: bits.parsed().into(),
+            nonce: nonce.parsed().into(),
         };
         visit.visit_block_header(&header);
-        Ok(ParseResult::new(nonce.remaining, header, 80))
+        Ok(ParseResult::new(nonce.remaining(), header))
     }
 
     /// Returns the block header version.
@@ -107,10 +107,10 @@ mod test {
         // genesis block
         let block_header = BlockHeader::parse(&GENESIS_BLOCK_HEADER).unwrap();
 
-        assert_eq!(block_header.remaining, &[][..]);
+        assert_eq!(block_header.remaining(), &[][..]);
         assert_eq!(
-            block_header.parsed,
-            BlockHeader {
+            block_header.parsed(),
+            &BlockHeader {
                 slice: &GENESIS_BLOCK_HEADER,
                 version: 1,
                 time: 1231006505,
@@ -118,19 +118,19 @@ mod test {
                 nonce: 2083236893
             }
         );
-        assert_eq!(block_header.consumed, 80);
+        assert_eq!(block_header.consumed(), 80);
 
         assert_eq!(
-            block_header.parsed.prev_blockhash(),
+            block_header.parsed().prev_blockhash(),
             hex!("0000000000000000000000000000000000000000000000000000000000000000")
         );
         assert_eq!(
-            block_header.parsed.merkle_root(),
+            block_header.parsed().merkle_root(),
             hex!("3ba3edfd7a7b12b27ac72c3e67768f617fc81bc3888a51323a9fb8aa4b1e5e4a")
         );
 
         check_hash(
-            &block_header.parsed,
+            &block_header.parsed(),
             hex!("000000000019d6689c085ae165831e934ff763ae46a2a6c172b3f1b60a8ce26f"),
         );
     }

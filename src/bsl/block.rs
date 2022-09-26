@@ -5,7 +5,7 @@ use crate::{EmptyVisitor, ParseResult, Visitor};
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Block<'a> {
     slice: &'a [u8],
-    block_header: BlockHeader<'a>,
+    header: BlockHeader<'a>,
     total_txs: Len<'a>,
 }
 
@@ -16,39 +16,32 @@ impl<'a> Block<'a> {
     }
     /// Visit the block from the given slice.
     pub fn visit<'b, V: Visitor>(slice: &'a [u8], visit: &'b mut V) -> crate::SResult<'a, Self> {
-        let ParseResult {
-            remaining,
-            parsed: block_header,
-            consumed: _,
-        } = BlockHeader::visit(slice, visit)?;
+        let header = BlockHeader::visit(slice, visit)?;
+        let len = Len::parse(header.remaining())?;
+        let total_txs = len.parsed().n() as usize;
+        let mut remaining = len.remaining();
+        let mut consumed = len.consumed() + 80;
 
-        let ParseResult {
-            mut remaining,
-            parsed: total_txs,
-            mut consumed,
-        } = Len::parse(remaining)?;
-
-        visit.visit_block_begin(total_txs.n() as usize);
-        for _ in 0..total_txs.n() {
+        visit.visit_block_begin(total_txs);
+        for _ in 0..total_txs {
             let tx = Transaction::visit(remaining, visit)?;
-            remaining = tx.remaining;
-            consumed += tx.consumed;
+            remaining = tx.remaining();
+            consumed += tx.consumed();
         }
-        consumed += 80;
 
         let (slice, remaining) = slice.split_at(consumed);
         let parsed = Block {
             slice,
-            block_header,
-            total_txs,
+            header: header.parsed_owned(),
+            total_txs: len.parsed_owned(),
         };
-        Ok(ParseResult::new(remaining, parsed, consumed))
+        Ok(ParseResult::new(remaining, parsed))
     }
 
     /// Returns the hash of this block
     #[cfg(feature = "bitcoin_hashes")]
     pub fn block_hash(&self) -> bitcoin_hashes::sha256d::Hash {
-        self.block_header.block_hash()
+        self.header.block_hash()
     }
 
     /// Calculate the block hash using the sha2 crate.
@@ -57,7 +50,7 @@ impl<'a> Block<'a> {
     pub fn block_hash_sha2(
         &self,
     ) -> sha2::digest::generic_array::GenericArray<u8, sha2::digest::typenum::U32> {
-        self.block_header.block_hash_sha2()
+        self.header.block_hash_sha2()
     }
 
     /// Returns the total transactions in this block
@@ -67,7 +60,7 @@ impl<'a> Block<'a> {
 
     /// Returns the header in this block
     pub fn header(&self) -> &BlockHeader {
-        &self.block_header
+        &self.header
     }
 }
 
@@ -89,16 +82,16 @@ mod test {
         let block_header = BlockHeader::parse(&GENESIS_BLOCK).unwrap();
         let block = Block::parse(&GENESIS_BLOCK).unwrap();
 
-        assert_eq!(block.remaining, &[][..]);
+        assert_eq!(block.remaining(), &[][..]);
         assert_eq!(
-            block.parsed,
-            Block {
+            block.parsed(),
+            &Block {
                 slice: &GENESIS_BLOCK,
-                block_header: block_header.parsed,
+                header: block_header.parsed_owned(),
                 total_txs: Len::new(&[1u8], 1)
             }
         );
-        assert_eq!(block.consumed, 285);
+        assert_eq!(block.consumed(), 285);
 
         // let mut iter = block.parsed.transactions();
         // let genesis_tx = iter.next().unwrap();

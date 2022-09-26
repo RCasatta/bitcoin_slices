@@ -33,9 +33,9 @@ impl<'a> Witnesses<'a> {
             let witness = Witness::visit(remaining, visit)?;
             visit.visit_witness_end();
 
-            remaining = witness.remaining;
-            consumed += witness.consumed;
-            if !witness.parsed.is_empty() {
+            remaining = witness.remaining();
+            consumed += witness.consumed();
+            if !witness.parsed().is_empty() {
                 all_empty = false;
             }
         }
@@ -43,7 +43,7 @@ impl<'a> Witnesses<'a> {
             slice: &slice[..consumed],
             all_empty,
         };
-        Ok(ParseResult::new(&slice[consumed..], witnesses, consumed))
+        Ok(ParseResult::new(&slice[consumed..], witnesses))
     }
 
     /// Returns if all the witness are empty (eg. contains only `0x00`)
@@ -61,9 +61,9 @@ mod test {
     fn parse_witnesses() {
         let witnesses_bytes = hex!("0101000201000100"); // first witness is [[0]], second witness is [[0][0]]
         let witnesses = Witnesses::parse(&witnesses_bytes[..], 2).unwrap();
-        assert_eq!(witnesses.remaining, &[][..]);
-        assert_eq!(witnesses.parsed.as_ref(), &witnesses_bytes[..]);
-        assert_eq!(witnesses.consumed, 8);
+        assert_eq!(witnesses.remaining(), &[][..]);
+        assert_eq!(witnesses.parsed().as_ref(), &witnesses_bytes[..]);
+        assert_eq!(witnesses.consumed(), 8);
     }
 
     #[test]

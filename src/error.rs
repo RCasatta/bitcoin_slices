@@ -5,11 +5,21 @@ pub enum Error {
     /// than needed to parse the whole object. For example if you pass a 20 bytes slice to
     /// [`crate::bsl::OutPoint::parse()`] you will get `Error::Needed(12)` because the first element parsed is
     /// the hash of 32 bytes, but to complete the object you would need another 4 bytes of the `vout`
-    Needed(usize),
+    Needed(u32),
 
     /// Returned if the segwit parsed tx contains a segwit flag which is not 1
     UnknownSegwitFlag(u8),
 
     /// Segwit markers are found, but the transaction has no witnesses
     SegwitFlagWithoutWitnesses,
+}
+
+#[cfg(test)]
+mod test {
+
+    #[cfg(target_pointer_width = "64")]
+    #[test]
+    fn size_of() {
+        assert_eq!(std::mem::size_of::<super::Error>(), 8);
+    }
 }

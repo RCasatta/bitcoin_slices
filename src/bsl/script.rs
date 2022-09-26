@@ -13,13 +13,14 @@ impl<'a> Script<'a> {
     pub fn parse(slice: &'a [u8]) -> SResult<Self> {
         let len = Len::parse(slice)?;
         Ok(
-            read_slice(len.remaining, len.parsed.n() as usize)?.map(|s| ParseResult {
-                remaining: s.remaining,
-                parsed: Script {
-                    slice: &slice[..len.parsed.slice_len()],
-                    from: len.parsed.as_ref().len(),
-                },
-                consumed: len.consumed + s.consumed,
+            read_slice(len.remaining(), len.parsed().n() as usize)?.map(|s| {
+                ParseResult::new(
+                    s.remaining(),
+                    Script {
+                        slice: &slice[..len.parsed().slice_len()],
+                        from: len.parsed().as_ref().len(),
+                    },
+                )
             }),
         )
     }
@@ -43,8 +44,8 @@ mod test {
         let script = Script::parse(slice);
         assert!(script.is_ok());
         let p = script.unwrap();
-        assert_eq!(p.remaining, &[]);
-        assert_eq!(p.parsed.script(), script_slice);
+        assert_eq!(p.remaining(), &[]);
+        assert_eq!(p.parsed().script(), script_slice);
     }
 
     #[test]

@@ -12,14 +12,15 @@ impl<'a> TxOut<'a> {
     /// Parse the transaction output in this slice
     pub fn parse(slice: &'a [u8]) -> SResult<Self> {
         let value = read_u64(slice)?;
-        let script = Script::parse(value.remaining)?;
-        let consumed = value.consumed + script.consumed;
+        let script = Script::parse(value.remaining())?;
+        let consumed = value.consumed() + script.consumed();
+        let remaining = script.remaining();
         let tx_out = TxOut {
             slice: &slice[..consumed],
-            value: value.parsed,
-            script_pubkey: script.parsed,
+            value: value.parsed_owned().into(),
+            script_pubkey: script.parsed_owned(),
         };
-        Ok(ParseResult::new(script.remaining, tx_out, consumed))
+        Ok(ParseResult::new(remaining, tx_out))
     }
     /// Return the amount of this output (satoshi)
     pub fn value(&self) -> u64 {
@@ -49,7 +50,7 @@ mod test {
         let tx_out_expected = TxOut {
             slice: &tx_out_bytes[..],
             value: u64::MAX,
-            script_pubkey: Script::parse(&hex!("0100")[..]).unwrap().parsed,
+            script_pubkey: Script::parse(&hex!("0100")[..]).unwrap().parsed_owned(),
         };
         assert_eq!(
             TxOut::parse(&tx_out_bytes[..]),

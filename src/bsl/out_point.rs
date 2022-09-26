@@ -17,14 +17,13 @@ impl<'a> OutPoint<'a> {
     /// Parse the out point from the given slice
     pub fn parse(slice: &'a [u8]) -> SResult<Self> {
         let txid = read_slice(slice, 32usize)?;
-        let vout = read_u32(txid.remaining)?;
+        let vout = read_u32(txid.remaining())?;
         Ok(ParseResult::new(
-            vout.remaining,
+            vout.remaining(),
             OutPoint {
                 slice: &slice[..36],
-                vout: vout.parsed,
+                vout: vout.parsed().into(),
             },
-            36,
         ))
     }
     /// Returns the transaction txid of the previous output
@@ -55,15 +54,11 @@ mod test {
         );
         assert_eq!(
             OutPoint::parse(&[0u8; 37]),
-            Ok(ParseResult {
-                remaining: &[0u8][..],
-                parsed: expected,
-                consumed: 36
-            })
+            Ok(ParseResult::new(&[0u8][..], expected,))
         );
         let vec: Vec<_> = (0..36).collect();
         let txid: Vec<_> = (0..32).collect();
         let out_point = OutPoint::parse(&vec[..]).unwrap();
-        assert_eq!(out_point.parsed.txid(), &txid[..]);
+        assert_eq!(out_point.parsed().txid(), &txid[..]);
     }
 }

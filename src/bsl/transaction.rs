@@ -24,45 +24,45 @@ impl<'a> Transaction<'a> {
     /// Visit the transaction in the slice
     pub fn visit<'b, V: Visitor>(slice: &'a [u8], visit: &'b mut V) -> SResult<'a, Self> {
         let version = read_i32(slice)?;
-        let inputs = TxIns::visit(version.remaining, visit)?;
-        if inputs.parsed.is_empty() {
-            let segwit_flag = read_u8(inputs.remaining)?;
-            match segwit_flag.parsed {
-                1 => {
-                    let inputs = TxIns::visit(segwit_flag.remaining, visit)?;
-                    let outputs = TxOuts::visit(inputs.remaining, visit)?;
-                    let witnesses =
-                        Witnesses::visit(outputs.remaining, inputs.parsed.n() as usize, visit)?;
+        let inputs = TxIns::visit(version.remaining(), visit)?;
+        if inputs.parsed().is_empty() {
+            let segwit_flag = read_u8(inputs.remaining())?;
+            let segwit_flag_u8 = segwit_flag.parsed().into();
+            if segwit_flag_u8 == 1 {
+                let inputs = TxIns::visit(segwit_flag.remaining(), visit)?;
+                let outputs = TxOuts::visit(inputs.remaining(), visit)?;
+                let witnesses =
+                    Witnesses::visit(outputs.remaining(), inputs.parsed().n() as usize, visit)?;
 
-                    if !inputs.parsed.is_empty() && witnesses.parsed.all_empty() {
-                        return Err(Error::SegwitFlagWithoutWitnesses);
-                    }
-
-                    let _locktime = read_u32(witnesses.remaining)?;
-                    let consumed = 10 + inputs.consumed + outputs.consumed + witnesses.consumed;
-                    let inputs_outputs_len =
-                        inputs.parsed.as_ref().len() + outputs.parsed.as_ref().len();
-
-                    let tx = Transaction {
-                        slice: &slice[..consumed],
-                        inputs_outputs_len: NonZeroU32::new(inputs_outputs_len as u32), // inputs_outputs_len is at least 2 bytes if both empty, they contain the compact int len
-                    };
-                    visit.visit_transaction(&tx);
-                    Ok(ParseResult::new(&slice[consumed..], tx, consumed))
+                if !inputs.parsed().is_empty() && witnesses.parsed().all_empty() {
+                    return Err(Error::SegwitFlagWithoutWitnesses);
                 }
-                x => Err(Error::UnknownSegwitFlag(x)),
+
+                let _locktime = read_u32(witnesses.remaining())?;
+                let consumed = 10 + inputs.consumed() + outputs.consumed() + witnesses.consumed();
+                let inputs_outputs_len =
+                    inputs.parsed().as_ref().len() + outputs.parsed().as_ref().len();
+
+                let tx = Transaction {
+                    slice: &slice[..consumed],
+                    inputs_outputs_len: NonZeroU32::new(inputs_outputs_len as u32), // inputs_outputs_len is at least 2 bytes if both empty, they contain the compact int len
+                };
+                visit.visit_transaction(&tx);
+                Ok(ParseResult::new(&slice[consumed..], tx))
+            } else {
+                Err(Error::UnknownSegwitFlag(segwit_flag_u8))
             }
         } else {
-            let outputs = TxOuts::visit(inputs.remaining, visit)?;
-            let _locktime = read_u32(outputs.remaining)?;
-            let consumed = inputs.consumed + outputs.consumed + 8;
+            let outputs = TxOuts::visit(inputs.remaining(), visit)?;
+            let _locktime = read_u32(outputs.remaining())?;
+            let consumed = inputs.consumed() + outputs.consumed() + 8;
 
             let tx = Transaction {
                 slice: &slice[..consumed],
                 inputs_outputs_len: None,
             };
             visit.visit_transaction(&tx);
-            Ok(ParseResult::new(&slice[consumed..], tx, consumed))
+            Ok(ParseResult::new(&slice[consumed..], tx))
         }
     }
 
@@ -70,7 +70,8 @@ impl<'a> Transaction<'a> {
     pub fn version(&self) -> i32 {
         read_i32(&self.slice[..4])
             .expect("slice length granted during parsing")
-            .parsed
+            .parsed_owned()
+            .into()
     }
 
     /// Returns the transaction locktime.
@@ -78,7 +79,8 @@ impl<'a> Transaction<'a> {
         let from = self.slice.len() - 4; // slice length granted during parsing
         read_u32(&self.slice[from..])
             .expect("slice length granted during parsing")
-            .parsed
+            .parsed_owned()
+            .into()
     }
 
     /// Return the txid preimage, or the data that must be fed to the hashing function (double sha256)
@@ -142,14 +144,14 @@ mod test {
     #[test]
     fn parse_genesis_transaction() {
         let tx = Transaction::parse(&GENESIS_TX[..]).unwrap();
-        assert_eq!(tx.remaining, &[][..]);
-        assert_eq!(tx.parsed.as_ref(), &GENESIS_TX[..]);
-        assert_eq!(tx.consumed, 204);
-        assert_eq!(tx.parsed.version(), 1);
-        assert_eq!(tx.parsed.locktime(), 0);
+        assert_eq!(tx.remaining(), &[][..]);
+        assert_eq!(tx.parsed().as_ref(), &GENESIS_TX[..]);
+        assert_eq!(tx.consumed(), 204);
+        assert_eq!(tx.parsed().version(), 1);
+        assert_eq!(tx.parsed().locktime(), 0);
 
         check_hash(
-            &tx.parsed,
+            &tx.parsed(),
             hex!("4a5e1e4baab89f3a32518a88c31bc87f618f76673e2cc77ab2127b7afdeda33b"),
         );
     }
@@ -158,14 +160,14 @@ mod test {
     fn parse_segwit_transaction() {
         let segwit_tx = hex!("010000000001010000000000000000000000000000000000000000000000000000000000000000ffffffff3603da1b0e00045503bd5704c7dd8a0d0ced13bb5785010800000000000a636b706f6f6c122f4e696e6a61506f6f6c2f5345475749542fffffffff02b4e5a212000000001976a914876fbb82ec05caa6af7a3b5e5a983aae6c6cc6d688ac0000000000000000266a24aa21a9edf91c46b49eb8a29089980f02ee6b57e7d63d33b18b4fddac2bcd7db2a39837040120000000000000000000000000000000000000000000000000000000000000000000000000");
         let tx = Transaction::parse(&segwit_tx[..]).unwrap();
-        assert_eq!(tx.remaining, &[]);
-        assert_eq!(tx.parsed.as_ref(), &segwit_tx[..]);
-        assert_eq!(tx.consumed, 222);
-        assert_eq!(tx.parsed.version(), 1);
-        assert_eq!(tx.parsed.locktime(), 0);
+        assert_eq!(tx.remaining(), &[]);
+        assert_eq!(tx.parsed().as_ref(), &segwit_tx[..]);
+        assert_eq!(tx.consumed(), 222);
+        assert_eq!(tx.parsed().version(), 1);
+        assert_eq!(tx.parsed().locktime(), 0);
 
         check_hash(
-            &tx.parsed,
+            &tx.parsed(),
             hex!("4be105f158ea44aec57bf12c5817d073a712ab131df6f37786872cfc70734188"), // testnet tx
         );
     }
@@ -209,7 +211,7 @@ mod bench {
     #[bench]
     pub fn tx_deserialize(bh: &mut Bencher) {
         bh.iter(|| {
-            let tx = Transaction::parse(&BENCH_TX[..]).unwrap().parsed;
+            let tx = Transaction::parse(&BENCH_TX[..]).unwrap().parsed_owned();
             black_box(&tx);
         });
     }
@@ -225,7 +227,7 @@ mod bench {
     #[cfg(feature = "bitcoin_hashes")]
     #[bench]
     pub fn txid(bh: &mut Bencher) {
-        let tx = Transaction::parse(&BENCH_TX[..]).unwrap().parsed;
+        let tx = Transaction::parse(&BENCH_TX[..]).unwrap().parsed_owned();
         bh.iter(|| {
             black_box(&tx.txid());
         });
@@ -234,7 +236,7 @@ mod bench {
     #[cfg(feature = "sha2")]
     #[bench]
     pub fn txid_sha2(bh: &mut Bencher) {
-        let tx = Transaction::parse(&BENCH_TX[..]).unwrap().parsed;
+        let tx = Transaction::parse(&BENCH_TX[..]).unwrap().parsed_owned();
         bh.iter(|| {
             black_box(&tx.txid_sha2());
         });
