@@ -1,5 +1,5 @@
 use crate::bsl::{Len, TxOut};
-use crate::{EmptyVisitor, ParseResult, SResult, Visitor};
+use crate::{Parse, ParseResult, SResult, Visit, Visitor};
 
 /// The transaction outputs of a transaction
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -8,13 +8,8 @@ pub struct TxOuts<'a> {
     n: usize,
 }
 
-impl<'a> TxOuts<'a> {
-    /// Parse the transaction outputs in the slice
-    pub fn parse(slice: &'a [u8]) -> SResult<Self> {
-        Self::visit(slice, &mut EmptyVisitor {})
-    }
-    /// Visit the transaction outputs in the slice
-    pub fn visit<'b, V: Visitor>(slice: &'a [u8], visit: &'b mut V) -> SResult<'a, Self> {
+impl<'a> Visit<'a> for TxOuts<'a> {
+    fn visit<'b, V: Visitor>(slice: &'a [u8], visit: &'b mut V) -> SResult<'a, Self> {
         let len = Len::parse(slice)?;
         let mut remaining = len.remaining();
         let mut consumed = len.consumed();
@@ -25,7 +20,7 @@ impl<'a> TxOuts<'a> {
             let tx_out = TxOut::parse(remaining)?;
             remaining = tx_out.remaining();
             consumed += tx_out.consumed();
-            visit.visit_tx_out(i as usize, &tx_out.parsed());
+            visit.visit_tx_out(i as usize, tx_out.parsed());
         }
         Ok(ParseResult::new(
             &slice[consumed..],
@@ -35,6 +30,8 @@ impl<'a> TxOuts<'a> {
             },
         ))
     }
+}
+impl<'a> TxOuts<'a> {
     /// If there are no outputs.
     pub fn is_empty(&self) -> bool {
         self.slice[0] == 0
@@ -57,7 +54,7 @@ mod test {
 
     use crate::{
         bsl::{TxOut, TxOuts},
-        Error, ParseResult, Visitor,
+        Error, Parse, ParseResult, Visit, Visitor,
     };
 
     #[test]

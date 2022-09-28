@@ -1,5 +1,5 @@
 use crate::bsl::Witness;
-use crate::{ParseResult, SResult};
+use crate::{ParseResult, SResult, Visit};
 
 /// Struct containining all the Witness in the tx (which is the same number as the inputs)
 #[derive(Debug, Clone, PartialEq, Eq, Default)]

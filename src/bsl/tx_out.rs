@@ -1,6 +1,6 @@
 use crate::bsl::Script;
 use crate::number::U64;
-use crate::{ParseResult, SResult, Visit};
+use crate::{Parse, ParseResult, SResult};
 
 /// Contains a single transaction output
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -9,9 +9,8 @@ pub struct TxOut<'a> {
     value: u64,
     script_pubkey: Script<'a>,
 }
-impl<'a> TxOut<'a> {
-    /// Parse the transaction output in this slice
-    pub fn parse(slice: &'a [u8]) -> SResult<Self> {
+impl<'a> Parse<'a> for TxOut<'a> {
+    fn parse(slice: &'a [u8]) -> SResult<Self> {
         let value = U64::parse(slice)?;
         let script = Script::parse(value.remaining())?;
         let consumed = value.consumed() + script.consumed();
@@ -23,6 +22,8 @@ impl<'a> TxOut<'a> {
         };
         Ok(ParseResult::new(remaining, tx_out))
     }
+}
+impl<'a> TxOut<'a> {
     /// Return the amount of this output (satoshi)
     pub fn value(&self) -> u64 {
         self.value
@@ -41,7 +42,7 @@ impl<'a> AsRef<[u8]> for TxOut<'a> {
 
 #[cfg(test)]
 mod test {
-    use crate::{bsl::Script, bsl::TxOut, ParseResult};
+    use crate::{bsl::Script, bsl::TxOut, Parse, ParseResult};
     use hex_lit::hex;
 
     #[test]

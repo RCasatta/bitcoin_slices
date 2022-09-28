@@ -1,19 +1,19 @@
 use crate::{
     number::{U16, U32, U64, U8},
-    ParseResult, SResult, Visit,
+    visit::Parse,
+    ParseResult, SResult,
 };
 
 /// The bitcoin compact int encoding, up to 253 it consumes 1 byte, then there are markers for
-/// `u16`, `u32` and `u64`.
+/// `u16`, `u32` or `u64`.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Len<'a> {
     slice: &'a [u8],
     n: u64,
 }
 
-impl<'a> Len<'a> {
-    /// Try to parse a compact int from the `slice`
-    pub fn parse(slice: &[u8]) -> SResult<Len> {
+impl<'a> Parse<'a> for Len<'a> {
+    fn parse(slice: &'a [u8]) -> SResult<'a, Self> {
         let p = U8::parse(slice)?;
         let (n, consumed) = match p.parsed().into() {
             0xFFu8 => U64::parse(p.remaining())?.map(|p| (u64::from(p.parsed()), 9)),
@@ -25,7 +25,9 @@ impl<'a> Len<'a> {
         let len = Len { slice, n };
         Ok(ParseResult::new(remaining, len))
     }
+}
 
+impl<'a> Len<'a> {
     /// The value encoded in this compact int
     pub fn n(&self) -> u64 {
         self.n
@@ -53,7 +55,7 @@ impl<'a> Len<'a> {
 
 #[cfg(test)]
 mod test {
-    use crate::{bsl::Len, Error, ParseResult};
+    use crate::{bsl::Len, Error, Parse, ParseResult};
 
     fn check(slice: &[u8], n: u64) {
         assert_eq!(

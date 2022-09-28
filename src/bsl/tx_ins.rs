@@ -1,5 +1,5 @@
 use crate::bsl::{Len, TxIn};
-use crate::{EmptyVisitor, ParseResult, SResult, Visitor};
+use crate::{Parse, ParseResult, SResult, Visit, Visitor};
 
 /// The transaction inputs of a transaction
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -8,13 +8,8 @@ pub struct TxIns<'a> {
     n: usize,
 }
 
-impl<'a> TxIns<'a> {
-    /// Parse the transactions inputs in the slice.
-    pub fn parse(slice: &'a [u8]) -> SResult<'a, Self> {
-        Self::visit(slice, &mut EmptyVisitor {})
-    }
-    /// Visit the transactions inputs in the slice.
-    pub fn visit<'b, V: Visitor>(slice: &'a [u8], visit: &'b mut V) -> SResult<'a, Self> {
+impl<'a> Visit<'a> for TxIns<'a> {
+    fn visit<'b, V: Visitor>(slice: &'a [u8], visit: &'b mut V) -> SResult<'a, Self> {
         let len = Len::parse(slice)?;
         let mut consumed = len.consumed();
         let mut remaining = len.remaining();
@@ -36,6 +31,8 @@ impl<'a> TxIns<'a> {
             },
         ))
     }
+}
+impl<'a> TxIns<'a> {
     /// Returns if there are no transaction inputs
     pub fn is_empty(&self) -> bool {
         self.slice[0] == 0
@@ -60,7 +57,7 @@ mod test {
 
     use crate::{
         bsl::{TxIn, TxIns},
-        Error, ParseResult, Visitor,
+        Error, Parse, ParseResult, Visit, Visitor,
     };
 
     #[test]

@@ -1,11 +1,12 @@
 use crate::{Error, ParseResult, SResult};
 
-pub fn read_slice<'a>(slice: &'a [u8], len: usize) -> SResult<&'a [u8]> {
-    if slice.len() < len {
-        Err(Error::Needed((len - slice.len()) as u32))
+/// Return a slice legnth `len` from `from` if it's long enough, error otherwise.
+pub fn read_slice(from: &[u8], len: usize) -> SResult<&[u8]> {
+    if from.len() < len {
+        let needed = len - from.len();
+        Err(Error::Needed(u32::try_from(needed).unwrap_or(u32::MAX)))
     } else {
-        let remaining = &slice[len..];
-        let parsed = &slice[..len];
+        let (parsed, remaining) = from.split_at(len);
 
         Ok(ParseResult::new(remaining, parsed))
     }

@@ -1,5 +1,6 @@
 use crate::bsl::Len;
-use crate::{slice::read_slice, EmptyVisitor, ParseResult, SResult, Visitor};
+use crate::{slice::read_slice, ParseResult, SResult, Visitor};
+use crate::{Parse, Visit};
 
 /// A single witness associated with a single transaction input.
 /// Logically is a vector of bytes vector.
@@ -14,13 +15,8 @@ impl<'a> AsRef<[u8]> for Witness<'a> {
     }
 }
 
-impl<'a> Witness<'a> {
-    /// Parse the witness in the slice
-    pub fn parse(slice: &'a [u8]) -> SResult<Self> {
-        Self::visit(slice, &mut EmptyVisitor {})
-    }
-    /// Visit the witness in the slice
-    pub fn visit<'b, V: Visitor>(slice: &'a [u8], visit: &'b mut V) -> SResult<'a, Witness<'a>> {
+impl<'a> Visit<'a> for Witness<'a> {
+    fn visit<'b, V: Visitor>(slice: &'a [u8], visit: &'b mut V) -> SResult<'a, Witness<'a>> {
         let len = Len::parse(slice)?;
         let mut consumed = len.consumed();
         let mut remaining = len.remaining();
@@ -40,6 +36,8 @@ impl<'a> Witness<'a> {
         };
         Ok(ParseResult::new(&slice[consumed..], witness))
     }
+}
+impl<'a> Witness<'a> {
     /// If this witness contain no elements
     pub fn is_empty(&self) -> bool {
         self.slice[0] == 0
@@ -48,7 +46,7 @@ impl<'a> Witness<'a> {
 
 #[cfg(test)]
 mod test {
-    use crate::{bsl::Witness, ParseResult, Visitor};
+    use crate::{bsl::Witness, Parse, ParseResult, Visit, Visitor};
     use hex_lit::hex;
 
     #[test]

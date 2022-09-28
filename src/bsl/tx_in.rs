@@ -1,7 +1,7 @@
 use crate::{
     bsl::{OutPoint, Script},
     number::U32,
-    ParseResult, SResult, Visit,
+    Parse, ParseResult, SResult,
 };
 
 /// A transaction input
@@ -13,9 +13,8 @@ pub struct TxIn<'a> {
     sequence: u32,
 }
 
-impl<'a> TxIn<'a> {
-    /// Parse a transaction input from this slice
-    pub fn parse(slice: &'a [u8]) -> SResult<Self> {
+impl<'a> Parse<'a> for TxIn<'a> {
+    fn parse(slice: &'a [u8]) -> SResult<Self> {
         let out_point = OutPoint::parse(slice)?;
         let script = Script::parse(out_point.remaining())?;
         let sequence = U32::parse(script.remaining())?;
@@ -28,6 +27,8 @@ impl<'a> TxIn<'a> {
         };
         Ok(ParseResult::new(sequence.remaining(), tx_in))
     }
+}
+impl<'a> TxIn<'a> {
     /// Returns the previous output index spent by this transaction input
     pub fn prevout(&self) -> &OutPoint {
         &self.prevout
@@ -54,7 +55,7 @@ mod test {
 
     use crate::{
         bsl::{OutPoint, Script, TxIn},
-        Error, ParseResult,
+        Error, Parse, ParseResult,
     };
 
     #[test]

@@ -1,16 +1,19 @@
-use crate::{bsl::Len, slice::read_slice, ParseResult, SResult};
+use crate::{bsl::Len, slice::read_slice, Parse, ParseResult, SResult};
 
 /// The Script, this type could be found in transaction outputs as `script_pubkey` or in transaction
-/// inputs as `script_sig`
+/// inputs as `script_sig`.
+///
+/// Note the slice returned with `as_ref()` contains the initial compact int, use [`Script::script()`]
+/// to have only the script bytes.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Script<'a> {
     slice: &'a [u8],
     from: usize,
 }
 
-impl<'a> Script<'a> {
+impl<'a> Parse<'a> for Script<'a> {
     /// Parse a script from the slice.
-    pub fn parse(slice: &'a [u8]) -> SResult<Self> {
+    fn parse(slice: &'a [u8]) -> SResult<Self> {
         let len = Len::parse(slice)?;
         Ok(
             read_slice(len.remaining(), len.parsed().n() as usize)?.map(|s| {
@@ -24,6 +27,8 @@ impl<'a> Script<'a> {
             }),
         )
     }
+}
+impl<'a> Script<'a> {
     /// return the script bytes (exclude the compact int representing the length)
     pub fn script(&self) -> &[u8] {
         &self.slice[self.from..]
@@ -38,7 +43,7 @@ impl<'a> AsRef<[u8]> for Script<'a> {
 
 #[cfg(test)]
 mod test {
-    use crate::{bsl::Script, Error};
+    use crate::{bsl::Script, Error, Parse};
 
     fn check(slice: &[u8], script_slice: &[u8]) {
         let script = Script::parse(slice);

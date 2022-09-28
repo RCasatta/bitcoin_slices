@@ -1,5 +1,5 @@
 use crate::bsl::{BlockHeader, Len, Transaction};
-use crate::{EmptyVisitor, ParseResult, Visitor};
+use crate::{Parse, ParseResult, SResult, Visit, Visitor};
 
 /// A Bitcoin block.
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -9,13 +9,8 @@ pub struct Block<'a> {
     total_txs: Len<'a>,
 }
 
-impl<'a> Block<'a> {
-    /// Parse the block from the given slice.
-    pub fn parse(slice: &'a [u8]) -> crate::SResult<Self> {
-        Self::visit(slice, &mut EmptyVisitor {})
-    }
-    /// Visit the block from the given slice.
-    pub fn visit<'b, V: Visitor>(slice: &'a [u8], visit: &'b mut V) -> crate::SResult<'a, Self> {
+impl<'a> Visit<'a> for Block<'a> {
+    fn visit<'b, V: Visitor>(slice: &'a [u8], visit: &'b mut V) -> SResult<'a, Self> {
         let header = BlockHeader::visit(slice, visit)?;
         let len = Len::parse(header.remaining())?;
         let total_txs = len.parsed().n() as usize;
@@ -37,7 +32,9 @@ impl<'a> Block<'a> {
         };
         Ok(ParseResult::new(remaining, parsed))
     }
+}
 
+impl<'a> Block<'a> {
     /// Returns the hash of this block
     #[cfg(feature = "bitcoin_hashes")]
     pub fn block_hash(&self) -> bitcoin_hashes::sha256d::Hash {
@@ -75,6 +72,7 @@ mod test {
     use crate::{
         bsl::{Block, BlockHeader, Len},
         test_common::GENESIS_BLOCK,
+        Parse,
     };
 
     #[test]
@@ -109,7 +107,7 @@ mod test {
 #[cfg(bench)]
 mod bench {
     use crate::bsl::{Block, TxOut};
-    use crate::Visitor;
+    use crate::{Parse, Visit, Visitor};
     use bitcoin::consensus::deserialize;
     use test::{black_box, Bencher};
 

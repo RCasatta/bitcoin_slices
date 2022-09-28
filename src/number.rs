@@ -2,9 +2,9 @@
 
 use core::convert::TryInto;
 
-use crate::{slice::read_slice, visit::Visit, ParseResult, SResult};
+use crate::{slice::read_slice, visit::Parse, ParseResult, SResult, Visit};
 
-///
+/// Converts into and from u8 and implements [`Visit`] and `AsRef<[u8]>`.
 #[derive(Debug, PartialEq, Eq)]
 pub struct U8([u8; 1]);
 
@@ -32,8 +32,8 @@ impl From<u8> for U8 {
     }
 }
 
-impl<'a> Visit<'a> for U8 {
-    fn visit<'b, V: crate::Visitor>(slice: &'a [u8], _visit: &'b mut V) -> SResult<'a, Self> {
+impl<'a> Parse<'a> for U8 {
+    fn parse(slice: &'a [u8]) -> SResult<'a, Self> {
         let p = read_slice(slice, 1)?;
         Ok(ParseResult::new(p.remaining(), U8([p.parsed()[0]])))
     }
@@ -41,7 +41,7 @@ impl<'a> Visit<'a> for U8 {
 
 macro_rules! impl_number {
     ($primitive:ty, $newtype:ident, $size:expr) => {
-        ///
+        #[doc=concat!("Converts into and from ", stringify!($primitive), " and implements [`Visit`] and `AsRef<[u8]>`." )]
         #[derive(Debug, PartialEq, Eq)]
         pub struct $newtype([u8; $size]);
 

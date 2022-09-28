@@ -2,21 +2,38 @@ use crate::SResult;
 
 use super::bsl;
 
-/// Parse or Visit a blockchain object such as a Block or a Transaction.
+/// Parse and return an object like [`crate::bsl::Len`] without visiting it.
 ///
-/// Parse means simply reading the slice, while visiting allows to give a Visitor that would be
-/// called with the components of the object visited
-pub trait Visit<'a>: Sized + AsRef<[u8]> {
+/// We don't provide is_empty like suggested by clippy because it would have different meaning:
+/// eg `TxOuts(&[0u8])` is considered empty because there are no tx outputs but is not an empty slice.
+#[allow(clippy::len_without_is_empty)]
+pub trait Parse<'a>: Sized + AsRef<[u8]> {
     /// Parse the object from the slice
-    fn parse(slice: &'a [u8]) -> SResult<'a, Self> {
-        Self::visit(slice, &mut EmptyVisitor {})
+    fn parse(slice: &'a [u8]) -> SResult<'a, Self>;
+
+    /// Return the serialized len of this object
+    fn len(&self) -> usize {
+        self.as_ref().len()
     }
-    /// Parse the obkect from the slice while calling methods on the given visitor
+}
+
+/// Visit a blockchain object such as a [`crate::bsl::Block`] or a [`crate::bsl::Transaction`].
+///
+/// while consuming the slice it calls methods on the provided visitor.
+#[allow(clippy::len_without_is_empty)]
+pub trait Visit<'a>: Sized + AsRef<[u8]> {
+    /// Visit the object from the slice while calling methods on the given visitor
     fn visit<'b, V: Visitor>(slice: &'a [u8], visit: &'b mut V) -> SResult<'a, Self>;
 
     /// Return the serialized len of this object
     fn len(&self) -> usize {
         self.as_ref().len()
+    }
+}
+
+impl<'a, T: Visit<'a>> Parse<'a> for T {
+    fn parse(slice: &'a [u8]) -> SResult<'a, Self> {
+        Self::visit(slice, &mut EmptyVisitor {})
     }
 }
 

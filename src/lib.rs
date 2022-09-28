@@ -20,7 +20,8 @@ mod visit;
 
 pub use error::Error;
 pub use parse_result::ParseResult;
-pub use visit::{EmptyVisitor, Visit, Visitor};
+pub use slice::read_slice;
+pub use visit::{EmptyVisitor, Parse, Visit, Visitor};
 
 type SResult<'a, T> = Result<ParseResult<'a, T>, Error>;
 

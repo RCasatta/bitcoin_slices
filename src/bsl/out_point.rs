@@ -1,4 +1,4 @@
-use crate::{number::U32, slice::read_slice, ParseResult, SResult, Visit};
+use crate::{number::U32, slice::read_slice, Parse, ParseResult, SResult};
 
 /// The out point of a transaction input, identifying the previous output being spent
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -13,9 +13,9 @@ impl<'a> AsRef<[u8]> for OutPoint<'a> {
     }
 }
 
-impl<'a> OutPoint<'a> {
+impl<'a> Parse<'a> for OutPoint<'a> {
     /// Parse the out point from the given slice
-    pub fn parse(slice: &'a [u8]) -> SResult<Self> {
+    fn parse(slice: &'a [u8]) -> SResult<Self> {
         let txid = read_slice(slice, 32usize)?;
         let vout = U32::parse(txid.remaining())?;
         Ok(ParseResult::new(
@@ -26,6 +26,8 @@ impl<'a> OutPoint<'a> {
             },
         ))
     }
+}
+impl<'a> OutPoint<'a> {
     /// Returns the transaction txid of the previous output
     pub fn txid(&self) -> &[u8] {
         &self.slice[..32]
@@ -38,7 +40,7 @@ impl<'a> OutPoint<'a> {
 
 #[cfg(test)]
 mod test {
-    use crate::{bsl::OutPoint, Error, ParseResult};
+    use crate::{bsl::OutPoint, Error, Parse, ParseResult};
 
     #[test]
     fn parse_out_point() {
