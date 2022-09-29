@@ -43,24 +43,40 @@ RUSTFLAGS='--cfg=bench' cargo +nightly bench --all-features
 ```
 
 ```sh
-test bsl::block::bench::block_deserialize            ... bench:     344,768 ns/iter (+/- 683)
-test bsl::block::bench::block_deserialize_bitcoin    ... bench:   1,565,341 ns/iter (+/- 174,542)
-test bsl::block::bench::block_sum_outputs            ... bench:     347,763 ns/iter (+/- 2,027)
-test bsl::block::bench::block_sum_outputs_bitcoin    ... bench:   1,469,288 ns/iter (+/- 143,139)
-test bsl::block::bench::hash_block_txs               ... bench:   4,443,346 ns/iter (+/- 88,908)
-test bsl::block::bench::hash_block_txs_bitcoin       ... bench:   6,303,477 ns/iter (+/- 45,197)
-test bsl::block::bench::hash_block_txs_sha2          ... bench:   1,012,167 ns/iter (+/- 1,492)
-test bsl::block_header::bench::block_hash            ... bench:         734 ns/iter (+/- 4)
-test bsl::block_header::bench::block_hash_bitcoin    ... bench:         800 ns/iter (+/- 6)
-test bsl::transaction::bench::tx_deserialize         ... bench:          58 ns/iter (+/- 1)
-test bsl::transaction::bench::tx_deserialize_bitcoin ... bench:         139 ns/iter (+/- 2)
-test bsl::transaction::bench::txid                   ... bench:       1,223 ns/iter (+/- 1)
-test bsl::transaction::bench::txid_bitcoin           ... bench:       1,358 ns/iter (+/- 8)
-test bsl::transaction::bench::txid_sha2              ... bench:         196 ns/iter (+/- 0)
+test bsl::block::bench::block_deserialize            ... bench:     289,421 ns/iter (+/- 46,179)
+test bsl::block::bench::block_deserialize_bitcoin    ... bench:   2,719,666 ns/iter (+/- 459,186)
+test bsl::block::bench::block_sum_outputs            ... bench:     288,248 ns/iter (+/- 39,013)
+test bsl::block::bench::block_sum_outputs_bitcoin    ... bench:   2,607,791 ns/iter (+/- 321,212)
+test bsl::block::bench::hash_block_txs               ... bench:   8,406,341 ns/iter (+/- 938,119)
+test bsl::block::bench::hash_block_txs_bitcoin       ... bench:  11,843,590 ns/iter (+/- 1,052,109)
+test bsl::block::bench::hash_block_txs_sha2          ... bench:   7,891,956 ns/iter (+/- 1,047,439)
+test bsl::block_header::bench::block_hash            ... bench:       1,399 ns/iter (+/- 205)
+test bsl::block_header::bench::block_hash_bitcoin    ... bench:       1,510 ns/iter (+/- 222)
+test bsl::transaction::bench::tx_deserialize         ... bench:          38 ns/iter (+/- 8)
+test bsl::transaction::bench::tx_deserialize_bitcoin ... bench:         219 ns/iter (+/- 30)
+test bsl::transaction::bench::txid                   ... bench:       2,185 ns/iter (+/- 166)
+test bsl::transaction::bench::txid_bitcoin           ... bench:       2,416 ns/iter (+/- 213)
+test bsl::transaction::bench::txid_sha2              ... bench:       2,085 ns/iter (+/- 216)
 ```
 
 * benches ending with `_bitcoin` use `rust-bitcoin`
 * benches ending with `_sha2` use `sha2` lib instead of `bitcoin_hashes`
+
+### Comparison against rust-bitcoin
+
+`block_deserialize` is almost 10 times faster then `block_deserialize_bitcoin`. It may see unfair 
+comparison since you can't for example iterate transactions from the resulted object in case of 
+`block_deserialize`, but looking at the `sum_outputs` example where a visitor is used to access 
+every outputs in a block we se there isn't noticeable difference.
+
+### Hashing 
+
+`block_hash` and `block_hash_bitcoin` use the same code to hash, however bitcoin_slice is about 7% 
+faster because use a slice already available instead of serializing back data.
+Similar results apply between `txid` and `txid_bitcoin`.
+The performance increase is more notable (30%) between `hash_block_txs` and `hash_block_txs_bitcoin`.
+
+`*_sha2` are not really representative on virtual CI machines since they are not hardware-accellerated. 
 
 ## Fuzz
 
@@ -90,4 +106,4 @@ cargo +nightly fuzz cmin transaction
 - [ ] create rotating buffer that consume and produce keeping a linear memory (rotate back when it can't append), 
 this would overcome a bit the absence of streaming API
 - [ ] implements network types
-- [ ] add github actions CI
+- [ ] add limited time fuzzing in CI
