@@ -23,7 +23,8 @@ pub use parse_result::ParseResult;
 pub use slice::read_slice;
 pub use visit::{EmptyVisitor, Parse, Visit, Visitor};
 
-type SResult<'a, T> = Result<ParseResult<'a, T>, Error>;
+/// Common result type throughout the lib
+pub type SResult<'a, T> = Result<ParseResult<'a, T>, Error>;
 
 #[cfg(any(test, bench))]
 pub mod test_common {
