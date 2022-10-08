@@ -9,6 +9,7 @@ documentation = "https://docs.rs/bitcoin_slices/"
 keywords = ["bitcoin", "blocks", "transaction", "parse", "slices"]
 readme = "README.md"
 license = "MIT"
+exclude = ["./test_data"]
 
 [dependencies]
 actual_bitcoin_hashes = { package="bitcoin_hashes", version="0.11", optional = true }
