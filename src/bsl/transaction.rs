@@ -99,8 +99,8 @@ impl<'a> Transaction<'a> {
     /// If the transaction is legacy (non-segwit) this identifier could be malleated, meaning
     /// the same transaction effect could have different identifiers.
     #[cfg(feature = "bitcoin_hashes")]
-    pub fn txid(&self) -> bitcoin_hashes::sha256d::Hash {
-        use bitcoin_hashes::{sha256d, Hash, HashEngine};
+    pub fn txid(&self) -> crate::bitcoin_hashes::sha256d::Hash {
+        use crate::bitcoin_hashes::{sha256d, Hash, HashEngine};
         let (a, b, c) = self.txid_preimage();
         let mut engine = sha256d::Hash::engine();
         engine.input(a);
@@ -114,8 +114,9 @@ impl<'a> Transaction<'a> {
     #[cfg(feature = "sha2")]
     pub fn txid_sha2(
         &self,
-    ) -> sha2::digest::generic_array::GenericArray<u8, sha2::digest::typenum::U32> {
-        use sha2::{Digest, Sha256};
+    ) -> crate::sha2::digest::generic_array::GenericArray<u8, crate::sha2::digest::typenum::U32>
+    {
+        use crate::sha2::{Digest, Sha256};
         let (a, b, c) = self.txid_preimage();
         let mut hasher = Sha256::new();
         hasher.update(a);

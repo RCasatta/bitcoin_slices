@@ -26,6 +26,14 @@ pub use visit::{EmptyVisitor, Parse, Visit, Visitor};
 /// Common result type throughout the lib
 pub type SResult<'a, T> = Result<ParseResult<'a, T>, Error>;
 
+// Remove when MSRV 1.60 and use `dep:`
+#[cfg(feature = "bitcoin_hashes")]
+use actual_bitcoin_hashes as bitcoin_hashes;
+
+// Remove when MSRV 1.60 and use `dep:`
+#[cfg(feature = "sha2")]
+use actual_sha2 as sha2;
+
 #[cfg(any(test, bench))]
 pub mod test_common {
     use hex_lit::hex;

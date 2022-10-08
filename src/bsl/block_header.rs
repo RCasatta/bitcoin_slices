@@ -67,8 +67,8 @@ impl<'a> BlockHeader<'a> {
 
     /// Returns the hash of this block header
     #[cfg(feature = "bitcoin_hashes")]
-    pub fn block_hash(&self) -> bitcoin_hashes::sha256d::Hash {
-        use bitcoin_hashes::{sha256d, Hash, HashEngine};
+    pub fn block_hash(&self) -> crate::bitcoin_hashes::sha256d::Hash {
+        use crate::bitcoin_hashes::{sha256d, Hash, HashEngine};
         let mut engine = sha256d::Hash::engine();
         engine.input(self.block_hash_preimage());
         sha256d::Hash::from_engine(engine)
@@ -79,8 +79,9 @@ impl<'a> BlockHeader<'a> {
     #[cfg(feature = "sha2")]
     pub fn block_hash_sha2(
         &self,
-    ) -> sha2::digest::generic_array::GenericArray<u8, sha2::digest::typenum::U32> {
-        use sha2::{Digest, Sha256};
+    ) -> crate::sha2::digest::generic_array::GenericArray<u8, crate::sha2::digest::typenum::U32>
+    {
+        use crate::sha2::{Digest, Sha256};
         let first = Sha256::digest(self.block_hash_preimage());
         Sha256::digest(&first[..])
     }

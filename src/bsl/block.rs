@@ -37,7 +37,7 @@ impl<'a> Visit<'a> for Block<'a> {
 impl<'a> Block<'a> {
     /// Returns the hash of this block
     #[cfg(feature = "bitcoin_hashes")]
-    pub fn block_hash(&self) -> bitcoin_hashes::sha256d::Hash {
+    pub fn block_hash(&self) -> crate::bitcoin_hashes::sha256d::Hash {
         self.header.block_hash()
     }
 
@@ -46,7 +46,8 @@ impl<'a> Block<'a> {
     #[cfg(feature = "sha2")]
     pub fn block_hash_sha2(
         &self,
-    ) -> sha2::digest::generic_array::GenericArray<u8, sha2::digest::typenum::U32> {
+    ) -> crate::sha2::digest::generic_array::GenericArray<u8, crate::sha2::digest::typenum::U32>
+    {
         self.header.block_hash_sha2()
     }
 
@@ -190,7 +191,12 @@ mod bench {
     pub fn hash_block_txs_sha2(bh: &mut Bencher) {
         bh.iter(|| {
             struct VisitTx(
-                Vec<sha2::digest::generic_array::GenericArray<u8, sha2::digest::typenum::U32>>,
+                Vec<
+                    crate::sha2::digest::generic_array::GenericArray<
+                        u8,
+                        crate::sha2::digest::typenum::U32,
+                    >,
+                >,
             );
             let mut v = VisitTx(vec![]);
             impl crate::Visitor for VisitTx {
