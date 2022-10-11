@@ -1,6 +1,6 @@
 [package]
 name = "bitcoin_slices"
-version = "0.4.2"
+version = "0.4.3"
 edition = "2021"
 authors = ["Riccardo Casatta <riccardo@casatta.it>"]
 description = "Parse Bitcoin objects without allocations"
@@ -9,7 +9,7 @@ documentation = "https://docs.rs/bitcoin_slices/"
 keywords = ["bitcoin", "blocks", "transaction", "parse", "slices"]
 readme = "README.md"
 license = "MIT"
-exclude = ["./test_data"]
+exclude = ["test_data"]
 
 [dependencies]
 actual_bitcoin_hashes = { package="bitcoin_hashes", version="0.11", optional = true }
