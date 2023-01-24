@@ -1,21 +1,23 @@
-use crate::bsl::{BlockHeader, Len, Transaction};
-use crate::{Parse, ParseResult, SResult, Visit, Visitor};
+use crate::bsl::{BlockHeader, Transaction};
+use crate::{ParseResult, SResult, Visit, Visitor};
+
+use super::len::parse_len;
 
 /// A Bitcoin block.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Block<'a> {
     slice: &'a [u8],
     header: BlockHeader<'a>,
-    total_txs: Len<'a>,
+    total_txs: u64,
 }
 
 impl<'a> Visit<'a> for Block<'a> {
     fn visit<'b, V: Visitor>(slice: &'a [u8], visit: &'b mut V) -> SResult<'a, Self> {
         let header = BlockHeader::visit(slice, visit)?;
-        let len = Len::parse(header.remaining())?;
-        let total_txs = len.parsed().n() as usize;
-        let mut remaining = len.remaining();
+        let len = parse_len(header.remaining())?;
+        let total_txs = len.n() as usize;
         let mut consumed = len.consumed() + 80;
+        let mut remaining = &slice[consumed..];
 
         visit.visit_block_begin(total_txs);
         for _ in 0..total_txs {
@@ -28,7 +30,7 @@ impl<'a> Visit<'a> for Block<'a> {
         let parsed = Block {
             slice,
             header: header.parsed_owned(),
-            total_txs: len.parsed_owned(),
+            total_txs: len.n(),
         };
         Ok(ParseResult::new(remaining, parsed))
     }
@@ -53,7 +55,7 @@ impl<'a> Block<'a> {
 
     /// Returns the total transactions in this block
     pub fn total_transactions(&self) -> usize {
-        self.total_txs.n() as usize
+        self.total_txs as usize
     }
 
     /// Returns the header in this block
@@ -71,7 +73,7 @@ impl<'a> AsRef<[u8]> for Block<'a> {
 #[cfg(test)]
 mod test {
     use crate::{
-        bsl::{Block, BlockHeader, Len},
+        bsl::{Block, BlockHeader},
         test_common::GENESIS_BLOCK,
         Parse,
     };
@@ -87,7 +89,7 @@ mod test {
             &Block {
                 slice: &GENESIS_BLOCK,
                 header: block_header.parsed_owned(),
-                total_txs: Len::new(&[1u8], 1)
+                total_txs: 1
             }
         );
         assert_eq!(block.consumed(), 285);
@@ -101,7 +103,7 @@ mod test {
     #[cfg(target_pointer_width = "64")]
     #[test]
     fn size_of() {
-        assert_eq!(std::mem::size_of::<Block>(), 72);
+        assert_eq!(std::mem::size_of::<Block>(), 56);
     }
 }
 
