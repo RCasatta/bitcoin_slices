@@ -17,6 +17,10 @@ pub enum Error {
 
     /// Segwit markers are found, but the transaction has no witnesses
     SegwitFlagWithoutWitnesses,
+
+    /// The decoded varint is not in it's minimal form, eg. `0xFD0100` it's decoded as `1` but it's
+    /// minimal encoding is `0x01`
+    NonMinimalVarInt,
 }
 
 #[cfg(test)]

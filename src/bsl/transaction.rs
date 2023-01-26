@@ -136,6 +136,7 @@ impl<'a> AsRef<[u8]> for Transaction<'a> {
 #[cfg(test)]
 mod test {
     use crate::{bsl::Transaction, test_common::GENESIS_TX, Parse};
+    use bitcoin::consensus::deserialize;
     use hex_lit::hex;
 
     #[test]
@@ -167,6 +168,32 @@ mod test {
             &tx.parsed(),
             hex!("4be105f158ea44aec57bf12c5817d073a712ab131df6f37786872cfc70734188"), // testnet tx
         );
+    }
+
+    #[test]
+    fn parse_nonminimal_transaction() {
+        let first_part =  hex!("020000000001010000000000000000000000000000000000000000000000000000000000000000ffffffff310349ce0b04db6fd2632f466f756e6472792055534120506f6f6c202364726f70676f6c642f1e284d6da44c000000000000ffffffff02311b662500000000");
+        let varint_nonminimal = hex!("fd1600");
+        let varint_minimal = hex!("16");
+        let last_part = hex!("001435f6de260c9f3bdee47524c473a6016c0c055cb90000000000000000266a24aa21a9edd86201e9d314d373d739d7e897c2f369d6cd89ad37902dc3e2202563159e449c0120000000000000000000000000000000000000000000000000000000000000000000000000");
+
+        let mut tx_nonminimal = vec![];
+        tx_nonminimal.extend(first_part);
+        tx_nonminimal.extend(varint_nonminimal);
+        tx_nonminimal.extend(last_part);
+
+        let mut tx = vec![];
+        tx.extend(first_part);
+        tx.extend(varint_minimal);
+        tx.extend(last_part);
+
+        assert_ne!(tx, tx_nonminimal);
+
+        assert!(deserialize::<bitcoin::Transaction>(&tx).is_ok());
+        assert!(deserialize::<bitcoin::Transaction>(&tx_nonminimal).is_err());
+
+        assert!(Transaction::parse(&tx[..]).is_ok());
+        assert!(Transaction::parse(&tx_nonminimal[..]).is_err());
     }
 
     #[cfg(target_pointer_width = "64")]

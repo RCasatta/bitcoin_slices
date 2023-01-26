@@ -14,15 +14,16 @@ pub struct Len {
 
 #[inline(always)]
 pub fn parse_len(slice: &[u8]) -> Result<Len, Error> {
-    let (n, consumed) = match slice.get(0) {
-        Some(0xFFu8) => U64::parse(&slice[1..])?.map(|p| (u64::from(p.parsed()), 9)),
-        Some(0xFEu8) => U32::parse(&slice[1..])?.map(|p| (u32::from(p.parsed()) as u64, 5)),
-        Some(0xFDu8) => U16::parse(&slice[1..])?.map(|p| (u16::from(p.parsed()) as u64, 3)),
-        Some(x) => (*x as u64, 1),
+    Ok(match slice.get(0) {
+        Some(0xFFu8) => U64::parse(&slice[1..])?.parsed_owned().to_len()?,
+        Some(0xFEu8) => U32::parse(&slice[1..])?.parsed_owned().to_len()?,
+        Some(0xFDu8) => U16::parse(&slice[1..])?.parsed_owned().to_len()?,
+        Some(x) => Len {
+            n: *x as u64,
+            consumed: 1,
+        },
         None => return Err(Error::Needed(1)),
-    };
-    let len = Len { consumed, n };
-    Ok(len)
+    })
 }
 
 impl Len {
@@ -59,7 +60,10 @@ mod test {
 
         check(&[10u8], 1, 10);
         check(&[0xFCu8], 1, 0xFC);
-        check(&[0xFDu8, 0xFD, 0], 3, 0xFD);
+
+        assert_eq!(parse_len(&[0xFDu8, 0xFD, 0]), Err(Error::NonMinimalVarInt));
+
+        check(&[0xFDu8, 0xFD, 0x33], 3, 0x33FD);
         check(&[0xFDu8, 0xFF, 0xF], 3, 0xFFF);
         check(&[10u8, 0u8], 1, 10);
 

@@ -2,7 +2,7 @@
 
 use core::convert::TryInto;
 
-use crate::{slice::read_slice, visit::Parse, ParseResult, SResult, Visit};
+use crate::{bsl::Len, slice::read_slice, visit::Parse, Error, ParseResult, SResult, Visit};
 
 /// Converts into and from u8 and implements [`Visit`] and `AsRef<[u8]>`.
 #[derive(Debug, PartialEq, Eq)]
@@ -89,6 +89,42 @@ impl_number!(u16, U16, 2);
 impl_number!(u32, U32, 4);
 impl_number!(i32, I32, 4);
 impl_number!(u64, U64, 8);
+
+impl U64 {
+    /// Convert to `Len`
+    pub fn to_len(self) -> Result<Len, Error> {
+        let n: u64 = self.into();
+        if n > u32::MAX as u64 {
+            Ok(Len { n, consumed: 9 })
+        } else {
+            Err(Error::NonMinimalVarInt)
+        }
+    }
+}
+
+impl U32 {
+    /// Convert to `Len`
+    pub fn to_len(self) -> Result<Len, Error> {
+        let n: u64 = u32::from(self) as u64;
+        if n > u16::MAX as u64 {
+            Ok(Len { n, consumed: 5 })
+        } else {
+            Err(Error::NonMinimalVarInt)
+        }
+    }
+}
+
+impl U16 {
+    /// Convert to `Len`
+    pub fn to_len(self) -> Result<Len, Error> {
+        let n: u64 = u16::from(self) as u64;
+        if n >= 0xFD {
+            Ok(Len { n, consumed: 3 })
+        } else {
+            Err(Error::NonMinimalVarInt)
+        }
+    }
+}
 
 #[cfg(test)]
 mod test {
