@@ -18,7 +18,7 @@ impl<'a> Parse<'a> for TxIn<'a> {
         let out_point = OutPoint::parse(slice)?;
         let script = Script::parse(out_point.remaining())?;
         let sequence = U32::parse(script.remaining())?;
-        let consumed = out_point.consumed() + script.consumed() + sequence.consumed();
+        let consumed = script.consumed() + 40;
         let tx_in = TxIn {
             slice: &slice[..consumed],
             prevout: out_point.parsed_owned(),
@@ -85,6 +85,6 @@ mod test {
             Err(Error::Needed(1))
         );
 
-        assert_eq!(TxIn::parse(&tx_in_bytes[..20]), Err(Error::Needed(12)));
+        assert_eq!(TxIn::parse(&tx_in_bytes[..20]), Err(Error::Needed(16)));
     }
 }
