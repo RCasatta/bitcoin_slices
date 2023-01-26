@@ -8,8 +8,8 @@ use crate::{
 /// `u16`, `u32` or `u64`.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Len {
-    consumed: usize,
-    n: u64,
+    pub(crate) consumed: usize,
+    pub(crate) n: u64,
 }
 
 #[inline(always)]

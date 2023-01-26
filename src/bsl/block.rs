@@ -1,22 +1,21 @@
+use super::len::{parse_len, Len};
 use crate::bsl::{BlockHeader, Transaction};
 use crate::{ParseResult, SResult, Visit, Visitor};
-
-use super::len::parse_len;
 
 /// A Bitcoin block.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Block<'a> {
     slice: &'a [u8],
     header: BlockHeader<'a>,
-    total_txs: u64,
+    total_txs: usize,
 }
 
 impl<'a> Visit<'a> for Block<'a> {
     fn visit<'b, V: Visitor>(slice: &'a [u8], visit: &'b mut V) -> SResult<'a, Self> {
         let header = BlockHeader::visit(slice, visit)?;
-        let len = parse_len(header.remaining())?;
-        let total_txs = len.n() as usize;
-        let mut consumed = len.consumed() + 80;
+        let Len { mut consumed, n } = parse_len(header.remaining())?;
+        consumed += 80;
+        let total_txs = n as usize;
         let mut remaining = &slice[consumed..];
 
         visit.visit_block_begin(total_txs);
@@ -30,7 +29,7 @@ impl<'a> Visit<'a> for Block<'a> {
         let parsed = Block {
             slice,
             header: header.parsed_owned(),
-            total_txs: len.n(),
+            total_txs,
         };
         Ok(ParseResult::new(remaining, parsed))
     }

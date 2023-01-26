@@ -1,6 +1,6 @@
 use crate::{slice::read_slice, Parse, ParseResult, SResult};
 
-use super::len::parse_len;
+use super::len::{parse_len, Len};
 
 /// The Script, this type could be found in transaction outputs as `script_pubkey` or in transaction
 /// inputs as `script_sig`.
@@ -16,14 +16,15 @@ pub struct Script<'a> {
 impl<'a> Parse<'a> for Script<'a> {
     /// Parse a script from the slice.
     fn parse(slice: &'a [u8]) -> SResult<Self> {
-        let len = parse_len(slice)?;
-        let remaining = &slice[len.consumed()..];
-        Ok(read_slice(remaining, len.n() as usize)?.map(|s| {
+        let Len { consumed, n } = parse_len(slice)?;
+        let n = n as usize;
+        let remaining = &slice[consumed..];
+        Ok(read_slice(remaining, n)?.map(|s| {
             ParseResult::new(
                 s.remaining(),
                 Script {
-                    slice: &slice[..len.slice_len()],
-                    from: len.consumed(),
+                    slice: &slice[..consumed + n],
+                    from: consumed,
                 },
             )
         }))

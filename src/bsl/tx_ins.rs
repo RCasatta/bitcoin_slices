@@ -1,7 +1,6 @@
+use super::len::{parse_len, Len};
 use crate::bsl::TxIn;
 use crate::{Parse, ParseResult, SResult, Visit, Visitor};
-
-use super::len::parse_len;
 
 /// The transaction inputs of a transaction
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -12,10 +11,9 @@ pub struct TxIns<'a> {
 
 impl<'a> Visit<'a> for TxIns<'a> {
     fn visit<'b, V: Visitor>(slice: &'a [u8], visit: &'b mut V) -> SResult<'a, Self> {
-        let len = parse_len(slice)?;
-        let mut consumed = len.consumed();
+        let Len { mut consumed, n } = parse_len(slice)?;
         let mut remaining = &slice[consumed..];
-        let total_inputs = len.n() as usize;
+        let total_inputs = n as usize;
         visit.visit_tx_ins(total_inputs);
 
         for i in 0..total_inputs {

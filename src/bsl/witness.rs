@@ -1,7 +1,6 @@
+use super::len::{parse_len, Len};
 use crate::Visit;
 use crate::{slice::read_slice, ParseResult, SResult, Visitor};
-
-use super::len::parse_len;
 
 /// A single witness associated with a single transaction input.
 /// Logically is a vector of bytes vector.
@@ -18,10 +17,9 @@ impl<'a> AsRef<[u8]> for Witness<'a> {
 
 impl<'a> Visit<'a> for Witness<'a> {
     fn visit<'b, V: Visitor>(slice: &'a [u8], visit: &'b mut V) -> SResult<'a, Witness<'a>> {
-        let len = parse_len(slice)?;
-        let mut consumed = len.consumed();
+        let Len { mut consumed, n } = parse_len(slice)?;
         let mut remaining = &slice[consumed..];
-        let witness_total_element = len.n() as usize;
+        let witness_total_element = n as usize;
 
         visit.visit_witness_total_element(witness_total_element);
         for i in 0..witness_total_element {

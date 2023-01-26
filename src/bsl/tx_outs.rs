@@ -1,7 +1,6 @@
+use super::len::{parse_len, Len};
 use crate::bsl::TxOut;
 use crate::{Parse, ParseResult, SResult, Visit, Visitor};
-
-use super::len::parse_len;
 
 /// The transaction outputs of a transaction
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -12,10 +11,9 @@ pub struct TxOuts<'a> {
 
 impl<'a> Visit<'a> for TxOuts<'a> {
     fn visit<'b, V: Visitor>(slice: &'a [u8], visit: &'b mut V) -> SResult<'a, Self> {
-        let len = parse_len(slice)?;
-        let mut consumed = len.consumed();
+        let Len { mut consumed, n } = parse_len(slice)?;
         let mut remaining = &slice[consumed..];
-        let total_outputs = len.n() as usize;
+        let total_outputs = n as usize;
         visit.visit_tx_outs(total_outputs);
 
         for i in 0..total_outputs {
