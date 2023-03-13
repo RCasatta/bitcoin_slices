@@ -61,8 +61,9 @@ mod test {
         check(&[10u8], 1, 10);
         check(&[0xFCu8], 1, 0xFC);
 
-        assert_eq!(parse_len(&[0xFDu8, 0xFD, 0]), Err(Error::NonMinimalVarInt));
+        assert_eq!(parse_len(&[0xFDu8, 0xFC, 0]), Err(Error::NonMinimalVarInt));
 
+        check(&[0xFDu8, 0xFD, 0x00], 3, 0xFD);
         check(&[0xFDu8, 0xFD, 0x33], 3, 0x33FD);
         check(&[0xFDu8, 0xFF, 0xF], 3, 0xFFF);
         check(&[10u8, 0u8], 1, 10);
