@@ -9,17 +9,17 @@ documentation = "https://docs.rs/bitcoin_slices/"
 keywords = ["bitcoin", "blocks", "transaction", "parse", "slices"]
 readme = "README.md"
 license = "MIT"
-exclude = ["test_data"]
 
 [dependencies]
 actual_bitcoin_hashes = { package="bitcoin_hashes", version="0.11", optional = true }
 actual_sha2 = { package="sha2", version= "0.10", optional = true }
 
 [features]
-default = [ ]
-bitcoin_hashes = [ "actual_bitcoin_hashes" ]
-sha2 = [ "actual_sha2" ]
+default = []
+bitcoin_hashes = ["actual_bitcoin_hashes"]
+sha2 = ["actual_sha2"]
 
 [dev-dependencies]
 hex_lit = {version = "0.1", features = [ "rust_v_1_46" ] }
 bitcoin = { version="0.29", features = [ "rand" ] }
+bitcoin-test-data = "0.2.0"

@@ -111,14 +111,13 @@ mod bench {
     use crate::bsl::{Block, TxOut};
     use crate::{Parse, Visit, Visitor};
     use bitcoin::consensus::deserialize;
+    use bitcoin_test_data::blocks::mainnet_702861;
     use test::{black_box, Bencher};
-
-    const BENCH_BLOCK: &[u8; 1_381_836] = include_bytes!("../../test_data/mainnet_block_000000000000000000000c835b2adcaedc20fdf6ee440009c249452c726dafae.raw");
 
     #[bench]
     pub fn block_deserialize(bh: &mut Bencher) {
         bh.iter(|| {
-            let block = Block::parse(BENCH_BLOCK).unwrap();
+            let block = Block::parse(mainnet_702861()).unwrap();
             black_box(&block);
         });
     }
@@ -126,7 +125,7 @@ mod bench {
     #[bench]
     pub fn block_deserialize_bitcoin(bh: &mut Bencher) {
         bh.iter(|| {
-            let block: bitcoin::Block = deserialize(BENCH_BLOCK).unwrap();
+            let block: bitcoin::Block = deserialize(mainnet_702861()).unwrap();
             black_box(&block);
         });
     }
@@ -141,7 +140,7 @@ mod bench {
                 }
             }
             let mut sum = Sum(0);
-            let block = Block::visit(BENCH_BLOCK, &mut sum).unwrap();
+            let block = Block::visit(mainnet_702861(), &mut sum).unwrap();
             assert_eq!(sum.0, 2883682728990);
             black_box(&block);
         });
@@ -150,7 +149,7 @@ mod bench {
     #[bench]
     pub fn block_sum_outputs_bitcoin(bh: &mut Bencher) {
         bh.iter(|| {
-            let block: bitcoin::Block = deserialize(BENCH_BLOCK).unwrap();
+            let block: bitcoin::Block = deserialize(mainnet_702861()).unwrap();
             let sum: u64 = block
                 .txdata
                 .iter()
@@ -179,7 +178,7 @@ mod bench {
                 }
             }
 
-            let block = Block::visit(&BENCH_BLOCK[..], &mut v).unwrap();
+            let block = Block::visit(mainnet_702861(), &mut v).unwrap();
 
             assert_eq!(v.0.len(), 2500);
 
@@ -209,7 +208,7 @@ mod bench {
                 }
             }
 
-            let block = Block::visit(&BENCH_BLOCK[..], &mut v).unwrap();
+            let block = Block::visit(mainnet_702861(), &mut v).unwrap();
 
             assert_eq!(v.0.len(), 2500);
 
@@ -220,7 +219,7 @@ mod bench {
     #[bench]
     pub fn hash_block_txs_bitcoin(bh: &mut Bencher) {
         bh.iter(|| {
-            let block: bitcoin::Block = deserialize(BENCH_BLOCK).unwrap();
+            let block: bitcoin::Block = deserialize(mainnet_702861()).unwrap();
             let mut tx_hashes = Vec::with_capacity(block.txdata.len());
 
             for tx in block.txdata.iter() {
