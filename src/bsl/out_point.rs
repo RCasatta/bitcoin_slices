@@ -39,6 +39,40 @@ impl<'a> OutPoint<'a> {
     }
 }
 
+#[cfg(feature = "redb")]
+impl<'o> redb::RedbValue for OutPoint<'o> {
+    type SelfType<'a> = OutPoint<'a>
+    where
+        Self: 'a;
+
+    type AsBytes<'a> =  &'a [u8]
+    where
+        Self: 'a;
+
+    fn fixed_width() -> Option<usize> {
+        Some(36)
+    }
+
+    fn from_bytes<'a>(data: &'a [u8]) -> Self::SelfType<'a>
+    where
+        Self: 'a,
+    {
+        OutPoint { slice: data }
+    }
+
+    fn as_bytes<'a, 'b: 'a>(value: &'a Self::SelfType<'b>) -> Self::AsBytes<'a>
+    where
+        Self: 'a,
+        Self: 'b,
+    {
+        value.as_ref()
+    }
+
+    fn type_name() -> redb::TypeName {
+        redb::TypeName::new("OutPoint")
+    }
+}
+
 #[cfg(test)]
 mod test {
     use crate::{bsl::OutPoint, Error, Parse, ParseResult};
@@ -60,5 +94,28 @@ mod test {
         let txid: Vec<_> = (0..32).collect();
         let out_point = OutPoint::parse(&vec[..]).unwrap();
         assert_eq!(out_point.parsed().txid(), &txid[..]);
+    }
+
+    #[cfg(feature = "redb")]
+    #[test]
+    fn test_out_point_redb() {
+        use redb::ReadableTable;
+
+        const TABLE: redb::TableDefinition<&str, OutPoint> = redb::TableDefinition::new("my_data");
+        let path = tempfile::NamedTempFile::new().unwrap().into_temp_path();
+        let db = redb::Database::create(path).unwrap();
+        let out_point_slice = [1u8; 36];
+        let out_point = OutPoint::parse(&out_point_slice).unwrap().parsed_owned();
+
+        let write_txn = db.begin_write().unwrap();
+        {
+            let mut table = write_txn.open_table(TABLE).unwrap();
+            table.insert("my_key", &out_point).unwrap();
+        }
+        write_txn.commit().unwrap();
+
+        let read_txn = db.begin_read().unwrap();
+        let table = read_txn.open_table(TABLE).unwrap();
+        assert_eq!(table.get("my_key").unwrap().unwrap().value(), out_point);
     }
 }
