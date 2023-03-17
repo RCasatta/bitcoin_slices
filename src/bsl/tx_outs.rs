@@ -48,6 +48,43 @@ impl<'a> AsRef<[u8]> for TxOuts<'a> {
     }
 }
 
+#[cfg(feature = "redb")]
+impl<'o> redb::RedbValue for TxOuts<'o> {
+    type SelfType<'a> = TxOuts<'a>
+    where
+        Self: 'a;
+
+    type AsBytes<'a> =  &'a [u8]
+    where
+        Self: 'a;
+
+    fn fixed_width() -> Option<usize> {
+        None
+    }
+
+    fn from_bytes<'a>(data: &'a [u8]) -> Self::SelfType<'a>
+    where
+        Self: 'a,
+    {
+        let n = parse_len(&data)
+            .expect("inserted data is not a valid TxOuts")
+            .n() as usize;
+        TxOuts { slice: data, n }
+    }
+
+    fn as_bytes<'a, 'b: 'a>(value: &'a Self::SelfType<'b>) -> Self::AsBytes<'a>
+    where
+        Self: 'a,
+        Self: 'b,
+    {
+        value.as_ref()
+    }
+
+    fn type_name() -> redb::TypeName {
+        redb::TypeName::new("TxOuts")
+    }
+}
+
 #[cfg(test)]
 mod test {
     use hex_lit::hex;
@@ -59,11 +96,7 @@ mod test {
 
     #[test]
     fn parse_tx_outs() {
-        let tx_out_bytes = hex!("ffffffffffffffff0100");
-        let mut tx_outs = vec![];
-        tx_outs.push(2u8);
-        tx_outs.extend(&tx_out_bytes);
-        tx_outs.extend(&tx_out_bytes);
+        let tx_outs = tx_out_bytes();
         let tx_outs_expected = TxOuts {
             slice: &tx_outs[..],
             n: 2,
@@ -79,13 +112,18 @@ mod test {
         );
     }
 
-    #[test]
-    fn visit_tx_outs() {
+    fn tx_out_bytes() -> Vec<u8> {
         let tx_out_bytes = hex!("ffffffffffffffff0100");
         let mut tx_outs = vec![];
         tx_outs.push(2u8);
         tx_outs.extend(&tx_out_bytes);
         tx_outs.extend(&tx_out_bytes);
+        tx_outs
+    }
+
+    #[test]
+    fn visit_tx_outs() {
+        let tx_outs = tx_out_bytes();
 
         struct VisitTxOuts(usize);
         impl Visitor for VisitTxOuts {
@@ -123,5 +161,28 @@ mod test {
     #[test]
     fn size_of() {
         assert_eq!(std::mem::size_of::<TxOuts>(), 24);
+    }
+
+    #[cfg(feature = "redb")]
+    #[test]
+    fn test_tx_outs_redb() {
+        use redb::ReadableTable;
+
+        const TABLE: redb::TableDefinition<&str, TxOuts> = redb::TableDefinition::new("my_data");
+        let path = tempfile::NamedTempFile::new().unwrap().into_temp_path();
+        let db = redb::Database::create(path).unwrap();
+        let tx_outs_bytes = tx_out_bytes();
+        let tx_outs = TxOuts::parse(&tx_outs_bytes).unwrap().parsed_owned();
+
+        let write_txn = db.begin_write().unwrap();
+        {
+            let mut table = write_txn.open_table(TABLE).unwrap();
+            table.insert("", &tx_outs).unwrap();
+        }
+        write_txn.commit().unwrap();
+
+        let read_txn = db.begin_read().unwrap();
+        let table = read_txn.open_table(TABLE).unwrap();
+        assert_eq!(table.get("").unwrap().unwrap().value(), tx_outs);
     }
 }

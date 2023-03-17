@@ -73,6 +73,13 @@ impl<'o> redb::RedbValue for OutPoint<'o> {
     }
 }
 
+#[cfg(feature = "redb")]
+impl<'o> redb::RedbKey for OutPoint<'o> {
+    fn compare(data1: &[u8], data2: &[u8]) -> core::cmp::Ordering {
+        data1.cmp(data2)
+    }
+}
+
 #[cfg(test)]
 mod test {
     use crate::{bsl::OutPoint, Error, Parse, ParseResult};
@@ -101,7 +108,8 @@ mod test {
     fn test_out_point_redb() {
         use redb::ReadableTable;
 
-        const TABLE: redb::TableDefinition<&str, OutPoint> = redb::TableDefinition::new("my_data");
+        const TABLE: redb::TableDefinition<OutPoint, OutPoint> =
+            redb::TableDefinition::new("my_data");
         let path = tempfile::NamedTempFile::new().unwrap().into_temp_path();
         let db = redb::Database::create(path).unwrap();
         let out_point_slice = [1u8; 36];
@@ -110,12 +118,12 @@ mod test {
         let write_txn = db.begin_write().unwrap();
         {
             let mut table = write_txn.open_table(TABLE).unwrap();
-            table.insert("my_key", &out_point).unwrap();
+            table.insert(&out_point, &out_point).unwrap();
         }
         write_txn.commit().unwrap();
 
         let read_txn = db.begin_read().unwrap();
         let table = read_txn.open_table(TABLE).unwrap();
-        assert_eq!(table.get("my_key").unwrap().unwrap().value(), out_point);
+        assert_eq!(table.get(&out_point).unwrap().unwrap().value(), out_point);
     }
 }

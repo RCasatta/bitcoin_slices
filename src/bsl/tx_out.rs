@@ -40,6 +40,42 @@ impl<'a> AsRef<[u8]> for TxOut<'a> {
     }
 }
 
+#[cfg(feature = "redb")]
+impl<'o> redb::RedbValue for TxOut<'o> {
+    type SelfType<'a> = TxOut<'a>
+    where
+        Self: 'a;
+
+    type AsBytes<'a> =  &'a [u8]
+    where
+        Self: 'a;
+
+    fn fixed_width() -> Option<usize> {
+        None
+    }
+
+    fn from_bytes<'a>(data: &'a [u8]) -> Self::SelfType<'a>
+    where
+        Self: 'a,
+    {
+        TxOut::parse(data)
+            .expect("inserted data is not a TxOut")
+            .parsed_owned()
+    }
+
+    fn as_bytes<'a, 'b: 'a>(value: &'a Self::SelfType<'b>) -> Self::AsBytes<'a>
+    where
+        Self: 'a,
+        Self: 'b,
+    {
+        value.as_ref()
+    }
+
+    fn type_name() -> redb::TypeName {
+        redb::TypeName::new("TxOut")
+    }
+}
+
 #[cfg(test)]
 mod test {
     use crate::{bsl::Script, bsl::TxOut, Parse, ParseResult};
@@ -58,5 +94,28 @@ mod test {
             TxOut::parse(&tx_out_bytes[..]),
             Ok(ParseResult::new_exact(tx_out_expected))
         );
+    }
+
+    #[cfg(feature = "redb")]
+    #[test]
+    fn test_tx_out_redb() {
+        use redb::ReadableTable;
+
+        const TABLE: redb::TableDefinition<&str, TxOut> = redb::TableDefinition::new("my_data");
+        let path = tempfile::NamedTempFile::new().unwrap().into_temp_path();
+        let db = redb::Database::create(path).unwrap();
+        let tx_out_bytes = hex!("ffffffffffffffff0100");
+        let tx_out = TxOut::parse(&tx_out_bytes).unwrap().parsed_owned();
+
+        let write_txn = db.begin_write().unwrap();
+        {
+            let mut table = write_txn.open_table(TABLE).unwrap();
+            table.insert("", &tx_out).unwrap();
+        }
+        write_txn.commit().unwrap();
+
+        let read_txn = db.begin_read().unwrap();
+        let table = read_txn.open_table(TABLE).unwrap();
+        assert_eq!(table.get("").unwrap().unwrap().value(), tx_out);
     }
 }
