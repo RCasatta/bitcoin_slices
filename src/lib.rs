@@ -34,6 +34,9 @@ use actual_bitcoin_hashes as bitcoin_hashes;
 #[cfg(feature = "sha2")]
 use actual_sha2 as sha2;
 
+#[cfg(feature = "redb")]
+pub use redb;
+
 #[cfg(any(test, bench))]
 pub mod test_common {
     use hex_lit::hex;
@@ -55,6 +58,7 @@ pub mod test_common {
         ret.reverse();
         ret
     }
+
 }
 
 /// Common functions used in fuzzing

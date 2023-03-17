@@ -12,6 +12,8 @@ pub struct Len {
     pub(crate) n: u64,
 }
 
+/// Parse `Len` from the slice.
+/// This is done without `Parse` trait to have better perfomance.
 #[inline(always)]
 pub fn parse_len(slice: &[u8]) -> Result<Len, Error> {
     Ok(match slice.get(0) {
