@@ -80,6 +80,24 @@ impl<'o> redb::RedbKey for OutPoint<'o> {
     }
 }
 
+#[cfg(feature = "bitcoin")]
+impl<'a> Into<bitcoin::OutPoint> for &OutPoint<'a> {
+    fn into(self) -> bitcoin::OutPoint {
+        use bitcoin::hashes::Hash;
+        bitcoin::OutPoint {
+            txid: bitcoin::Txid::from_inner(self.txid().try_into().unwrap()),
+            vout: self.vout(),
+        }
+    }
+}
+
+#[cfg(feature = "bitcoin")]
+impl<'a> Into<bitcoin::OutPoint> for OutPoint<'a> {
+    fn into(self) -> bitcoin::OutPoint {
+        (&self).into()
+    }
+}
+
 #[cfg(test)]
 mod test {
     use crate::{bsl::OutPoint, Error, Parse, ParseResult};
@@ -125,5 +143,18 @@ mod test {
         let read_txn = db.begin_read().unwrap();
         let table = read_txn.open_table(TABLE).unwrap();
         assert_eq!(table.get(&out_point).unwrap().unwrap().value(), out_point);
+    }
+
+    #[cfg(feature = "bitcoin")]
+    #[test]
+    fn test_tx_out_bitcoin() {
+        let out_point_slice = [1u8; 36];
+        let out_point = OutPoint::parse(&out_point_slice).unwrap().parsed_owned();
+
+        let out_point_bitcoin: bitcoin::OutPoint =
+            bitcoin::consensus::deserialize(out_point.as_ref()).unwrap();
+
+        let out_point_bitcoin_bytes = bitcoin::consensus::serialize(&out_point_bitcoin);
+        assert_eq!(&out_point_slice[..], &out_point_bitcoin_bytes[..]);
     }
 }

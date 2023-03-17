@@ -76,6 +76,23 @@ impl<'o> redb::RedbValue for TxOut<'o> {
     }
 }
 
+#[cfg(feature = "bitcoin")]
+impl<'a> Into<bitcoin::TxOut> for &TxOut<'a> {
+    fn into(self) -> bitcoin::TxOut {
+        bitcoin::TxOut {
+            value: self.value(),
+            script_pubkey: self.script_pubkey().to_vec().into(),
+        }
+    }
+}
+
+#[cfg(feature = "bitcoin")]
+impl<'a> Into<bitcoin::TxOut> for TxOut<'a> {
+    fn into(self) -> bitcoin::TxOut {
+        (&self).into()
+    }
+}
+
 #[cfg(test)]
 mod test {
     use crate::{bsl::Script, bsl::TxOut, Parse, ParseResult};
@@ -117,5 +134,17 @@ mod test {
         let read_txn = db.begin_read().unwrap();
         let table = read_txn.open_table(TABLE).unwrap();
         assert_eq!(table.get("").unwrap().unwrap().value(), tx_out);
+    }
+
+    #[cfg(feature = "bitcoin")]
+    #[test]
+    fn test_tx_out_bitcoin() {
+        let tx_out_bytes = hex!("ffffffffffffffff0100");
+        let tx_out = TxOut::parse(&tx_out_bytes).unwrap().parsed_owned();
+
+        let tx_out_bitcoin: bitcoin::TxOut =
+            bitcoin::consensus::deserialize(tx_out.as_ref()).unwrap();
+        let tx_out_bitcoin_bytes = bitcoin::consensus::serialize(&tx_out_bitcoin);
+        assert_eq!(&tx_out_bytes[..], &tx_out_bitcoin_bytes[..]);
     }
 }
