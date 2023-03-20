@@ -19,7 +19,7 @@ impl<'a> Parse<'a> for OutPoint<'a> {
         Ok(ParseResult::new(
             outpoint.remaining(),
             OutPoint {
-                slice: outpoint.parsed_owned().as_ref(),
+                slice: outpoint.parsed_owned(),
             },
         ))
     }

@@ -26,8 +26,7 @@ impl<'a> Visit<'a> for Transaction<'a> {
             if segwit_flag_u8 == 1 {
                 let inputs = TxIns::visit(segwit_flag.remaining(), visit)?;
                 let outputs = TxOuts::visit(inputs.remaining(), visit)?;
-                let witnesses =
-                    Witnesses::visit(outputs.remaining(), inputs.parsed().n() as usize, visit)?;
+                let witnesses = Witnesses::visit(outputs.remaining(), inputs.parsed().n(), visit)?;
 
                 if !inputs.parsed().is_empty() && witnesses.parsed().all_empty() {
                     return Err(Error::SegwitFlagWithoutWitnesses);

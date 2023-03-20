@@ -20,7 +20,7 @@ impl<'a> Visit<'a> for TxOuts<'a> {
             let tx_out = TxOut::parse(remaining)?;
             remaining = tx_out.remaining();
             consumed += tx_out.consumed();
-            visit.visit_tx_out(i as usize, tx_out.parsed());
+            visit.visit_tx_out(i, tx_out.parsed());
         }
         Ok(ParseResult::new(
             &slice[consumed..],
@@ -47,7 +47,7 @@ impl<'a> TxOuts<'a> {
     /// be conveniet to iterate in case you already have validated the slice, for example some data
     /// in a db.
     pub fn iter(&self) -> impl Iterator<Item = TxOut> {
-        let len = parse_len(&self.slice).expect("len granted by parsing");
+        let len = parse_len(self.slice).expect("len granted by parsing");
         TxOutIterator {
             elements: len.n() as usize,
             offset: len.consumed(),

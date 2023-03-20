@@ -54,7 +54,7 @@ impl<'a> Block<'a> {
 
     /// Returns the total transactions in this block
     pub fn total_transactions(&self) -> usize {
-        self.total_txs as usize
+        self.total_txs
     }
 
     /// Returns the header in this block

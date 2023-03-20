@@ -16,7 +16,7 @@ pub struct Len {
 /// This is done without `Parse` trait to have better perfomance.
 #[inline(always)]
 pub fn parse_len(slice: &[u8]) -> Result<Len, Error> {
-    Ok(match slice.get(0) {
+    Ok(match slice.first() {
         Some(0xFFu8) => U64::parse(&slice[1..])?.parsed_owned().to_len()?,
         Some(0xFEu8) => U32::parse(&slice[1..])?.parsed_owned().to_len()?,
         Some(0xFDu8) => U16::parse(&slice[1..])?.parsed_owned().to_len()?,
