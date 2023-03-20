@@ -40,7 +40,48 @@ impl<'a> TxOuts<'a> {
     pub fn n(&self) -> usize {
         self.n
     }
+
+    /// Returns an iterator over [`bitcoin::TxOut`]
+    ///
+    /// If possible is better to use [`Visitor::visit_tx_out`] to avoid double pass, however, it may
+    /// be conveniet to iterate in case you already have validated the slice, for example some data
+    /// in a db.
+    pub fn iter(&self) -> impl Iterator<Item = TxOut> {
+        let len = parse_len(&self.slice).expect("len granted by parsing");
+        TxOutIterator {
+            elements: len.n() as usize,
+            offset: len.consumed(),
+            tx_outs: self,
+        }
+    }
 }
+
+struct TxOutIterator<'a> {
+    elements: usize,
+    offset: usize,
+    tx_outs: &'a TxOuts<'a>,
+}
+
+impl<'a> Iterator for TxOutIterator<'a> {
+    type Item = TxOut<'a>;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        if self.offset >= self.tx_outs.as_ref().len() {
+            None
+        } else {
+            let tx_out =
+                TxOut::parse(&self.tx_outs.slice[self.offset..]).expect("granted from parsing");
+            self.offset += tx_out.consumed();
+            Some(tx_out.parsed_owned())
+        }
+    }
+
+    fn size_hint(&self) -> (usize, Option<usize>) {
+        (self.elements, Some(self.elements))
+    }
+}
+
+impl<'a> ExactSizeIterator for TxOutIterator<'a> {}
 
 impl<'a> AsRef<[u8]> for TxOuts<'a> {
     fn as_ref(&self) -> &[u8] {
@@ -96,7 +137,7 @@ mod test {
 
     #[test]
     fn parse_tx_outs() {
-        let tx_outs = tx_out_bytes();
+        let tx_outs = tx_outs_bytes();
         let tx_outs_expected = TxOuts {
             slice: &tx_outs[..],
             n: 2,
@@ -112,7 +153,7 @@ mod test {
         );
     }
 
-    fn tx_out_bytes() -> Vec<u8> {
+    fn tx_outs_bytes() -> Vec<u8> {
         let tx_out_bytes = hex!("ffffffffffffffff0100");
         let mut tx_outs = vec![];
         tx_outs.push(2u8);
@@ -123,7 +164,7 @@ mod test {
 
     #[test]
     fn visit_tx_outs() {
-        let tx_outs = tx_out_bytes();
+        let tx_outs = tx_outs_bytes();
 
         struct VisitTxOuts(usize);
         impl Visitor for VisitTxOuts {
@@ -157,6 +198,24 @@ mod test {
         assert!(!visitor.1);
     }
 
+    #[test]
+    fn iter_tx_outs() {
+        let mut tx_outs_bytes = tx_outs_bytes();
+        *tx_outs_bytes.last_mut().unwrap() = 1;
+        tx_outs_bytes.push(1);
+        let tx_outs = TxOuts::parse(&tx_outs_bytes[..]).unwrap().parsed_owned();
+        let mut iter = tx_outs.iter();
+        let tx_out = iter.next().unwrap();
+        assert_eq!(tx_out.value(), 0xffffffffffffffff);
+        assert_eq!(tx_out.script_pubkey(), &[0]);
+
+        let tx_out = iter.next().unwrap();
+        assert_eq!(tx_out.value(), 0xffffffffffffffff);
+        assert_eq!(tx_out.script_pubkey(), &[1]);
+
+        assert!(iter.next().is_none());
+    }
+
     #[cfg(target_pointer_width = "64")]
     #[test]
     fn size_of() {
@@ -171,7 +230,7 @@ mod test {
         const TABLE: redb::TableDefinition<&str, TxOuts> = redb::TableDefinition::new("my_data");
         let path = tempfile::NamedTempFile::new().unwrap().into_temp_path();
         let db = redb::Database::create(path).unwrap();
-        let tx_outs_bytes = tx_out_bytes();
+        let tx_outs_bytes = tx_outs_bytes();
         let tx_outs = TxOuts::parse(&tx_outs_bytes).unwrap().parsed_owned();
 
         let write_txn = db.begin_write().unwrap();

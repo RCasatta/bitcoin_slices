@@ -58,7 +58,6 @@ pub mod test_common {
         ret.reverse();
         ret
     }
-
 }
 
 /// Common functions used in fuzzing

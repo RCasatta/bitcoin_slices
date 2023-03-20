@@ -25,6 +25,15 @@ pub trait Visit<'a>: Sized + AsRef<[u8]> {
     /// Visit the object from the slice while calling methods on the given visitor
     fn visit<'b, V: Visitor>(slice: &'a [u8], visit: &'b mut V) -> SResult<'a, Self>;
 
+    /// Self visit calling methods on the given visitor.
+    ///
+    /// It's generally better to avoid a double pass and visit directly the first passing through
+    /// the slice. However, there are case where the slice has already been validated, for example
+    /// inserted in a db and you need to visit again.
+    fn self_visit<'b, V: Visitor>(&'a self, visit: &'b mut V) -> SResult<'a, Self> {
+        Self::visit(self.as_ref(), visit)
+    }
+
     /// Return the serialized len of this object
     fn len(&self) -> usize {
         self.as_ref().len()
