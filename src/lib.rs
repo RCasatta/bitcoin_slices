@@ -1,3 +1,6 @@
+#![cfg_attr(docsrs, feature(doc_cfg))]
+#![deny(missing_docs)]
+
 //! # Bitcoin Slices
 //!
 //! ZERO allocations parse library for Bitcoin data structures available in the [`bsl`] module.
@@ -26,15 +29,16 @@ pub use visit::{EmptyVisitor, Parse, Visit, Visitor};
 /// Common result type throughout the lib
 pub type SResult<'a, T> = Result<ParseResult<'a, T>, Error>;
 
-// Remove when MSRV 1.60 and use `dep:`
 #[cfg(feature = "bitcoin_hashes")]
-use actual_bitcoin_hashes as bitcoin_hashes;
+#[cfg_attr(docsrs, doc(cfg(feature = "bitcoin_hashes")))]
+pub use bitcoin_hashes;
 
-// Remove when MSRV 1.60 and use `dep:`
 #[cfg(feature = "sha2")]
-use actual_sha2 as sha2;
+#[cfg_attr(docsrs, doc(cfg(feature = "sha2")))]
+pub use sha2;
 
 #[cfg(feature = "redb")]
+#[cfg_attr(docsrs, doc(cfg(feature = "redb")))]
 pub use redb;
 
 #[cfg(any(test, bench))]

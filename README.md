@@ -30,6 +30,31 @@ Check the CONS before using this library, use rust-bitcoin if they are too restr
 * Data structure are read-only, cannot be modified.
 * Visitor pattern requires user-built data structure for visiting.
 
+## Features
+
+### Hashing
+
+Use feature `sha2` or `bitcoin_hashes` to calculate hashes of blocks and transactions.
+The former is faster, the latter is more likely to be in your tree if you work with rust-bitcoin 
+ecosystem's crates.
+
+### redb
+
+With the `redb` feature activated some type allows to be used as value and key in the 
+[redb](https://github.com/cberner/redb) database. Bitcoin slices types are well suited to be used
+as key and values in the database because conversion from/to slices is immediate.
+
+### rust-bitcoin
+
+With the feature `bitcoin` activated some types allows to be converted in the `rust-bitcoin` 
+counterpart: for example `bsl::Transaction` could be converted in `bitcoin::Transaction`. 
+You may think if you need `bitcoin::Transaction` you can decode the bytes directly into it without
+using this library, and is mostly true, but sometimes it may be convenient to use both types, for
+example using bitcoin slices with datatabases is very convenient because conversion is free, but 
+you may need to access fields more conveniently than writing a visitor for it and thus convert to 
+rust-bitcoin types. Moreover, conversions may leverage type invariants and be faster than starting 
+from a generic byte stream.
+
 ## Test
 
 ```sh
@@ -94,6 +119,15 @@ Miniminze corpus:
 ```
 cargo +nightly fuzz cmin transaction
 ```
+
+## Doc
+
+To build docs:
+
+```
+RUSTDOCFLAGS="--cfg docsrs" cargo +nightly doc --all-features --open
+```
+
 
 ## Previous work and credits
 
