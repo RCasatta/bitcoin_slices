@@ -149,5 +149,9 @@ mod test {
             bitcoin::consensus::deserialize(tx_out.as_ref()).unwrap();
         let tx_out_bitcoin_bytes = bitcoin::consensus::serialize(&tx_out_bitcoin);
         assert_eq!(&tx_out_bytes[..], &tx_out_bitcoin_bytes[..]);
+
+        let tx_out_back: bitcoin::TxOut = tx_out.into();
+
+        assert_eq!(tx_out_back, tx_out_bitcoin);
     }
 }

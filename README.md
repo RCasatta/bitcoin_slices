@@ -4,20 +4,36 @@
 
 # Bitcoin slices
 
-ZERO allocations parse library for Bitcoin data structures.
+ZERO allocations parse library for Bitcoin data structures such as [`bsl::Transaction`]s, [`bsl::Block`]s
+and others available in the [`bsl`] module.
 
-Data is accessed by providing visitor structs for the data the user is interested in.
+Data is accessed by providing [`Visitor`] structs for the data the user is interested in.
+
+```rust
+// Calculate the amount of outputs in mainnet block 702861 in satoshi
+use bitcoin_slices::{bsl, Visit, Visitor};
+struct Sum(pub u64);
+impl Visitor for Sum {
+    fn visit_tx_out(&mut self, _vout: usize, tx_out: &bsl::TxOut) {
+        self.0 += tx_out.value();
+    }
+}
+let mut sum = Sum(0);
+let block = bsl::Block::visit(bitcoin_test_data::blocks::mainnet_702861(), &mut sum).unwrap();
+assert_eq!(sum.0, 2_883_682_728_990)
+```
 
 Data structures are read-only and parsed data must be in memory, no streaming API.
 
 ## Tradeoffs
 
-Check the CONS before using this library, use rust-bitcoin if they are too restrictive for your case.
+Check the CONS before using this library, use [rust-bitcoin](https://github.com/rust-bitcoin/rust-bitcoin) if they are too restrictive for your case.
 
 ### Pros
 
-* Deserialization is amazingly fast, since no allocation is made during parsing.
-* Serialization is incredibly fast, since a slice of the serialized data is kept in the structure.
+* Deserialization is [amazingly fast](#bench), since no allocation is made during parsing.
+* Serialization is instant, since a slice of the serialized data is kept in the structure.
+* [`bsl`] types are suitable for db key and values, in fact there is a specific `redb` [feature](#redb)
 * hashing a little faster because slice are ready without the need of re-serializing data.
 * No mandatory dependency.
 * No standard.
@@ -44,16 +60,55 @@ With the `redb` feature activated some type allows to be used as value and key i
 [redb](https://github.com/cberner/redb) database. Bitcoin slices types are well suited to be used
 as key and values in the database because conversion from/to slices is immediate.
 
+```rust
+#[cfg(feature = "redb")]
+{
+    use bitcoin_slices::{bsl, redb, Parse, redb::ReadableTable};
+    const UTXOS_TABLE: redb::TableDefinition<bsl::OutPoint, bsl::TxOut> = redb::TableDefinition::new("utxos");
+    let path = tempfile::NamedTempFile::new().unwrap().into_temp_path();
+    let db = redb::Database::create(path).unwrap();
+    let write_txn = db.begin_write().unwrap();
+    let tx_out_bytes = hex_lit::hex!("ffffffffffffffff0100");
+    let out_point_bytes = [0u8; 36];
+    let tx_out = bsl::TxOut::parse(&tx_out_bytes).unwrap().parsed_owned();
+    let out_point = bsl::OutPoint::parse(&out_point_bytes).unwrap().parsed_owned();
+    {
+        let mut table = write_txn.open_table(UTXOS_TABLE).unwrap();
+        table.insert(&out_point, &tx_out).unwrap();
+    }
+    write_txn.commit().unwrap();
+
+    let read_txn = db.begin_read().unwrap();
+    let table = read_txn.open_table(UTXOS_TABLE).unwrap();
+    assert_eq!(table.get(&out_point).unwrap().unwrap().value(), tx_out);
+}
+```
+
 ### rust-bitcoin
 
 With the feature `bitcoin` activated some types allows to be converted in the `rust-bitcoin` 
-counterpart: for example `bsl::Transaction` could be converted in `bitcoin::Transaction`. 
-You may think if you need `bitcoin::Transaction` you can decode the bytes directly into it without
-using this library, and is mostly true, but sometimes it may be convenient to use both types, for
-example using bitcoin slices with datatabases is very convenient because conversion is free, but 
-you may need to access fields more conveniently than writing a visitor for it and thus convert to 
-rust-bitcoin types. Moreover, conversions may leverage type invariants and be faster than starting 
-from a generic byte stream.
+counterpart: for example `bsl::TxOut` could be converted in `bitcoin::TxOut`. 
+You may think if you need `bitcoin::TxOut` you can decode the bytes directly into it without
+using this library, and it is mostly true, but sometimes it may be convenient to use both types, for
+example using bitcoin slices with datatabases, but you may need to access fields more conveniently 
+than writing a visitor for it and thus convert to rust-bitcoin types. 
+Moreover, conversions may leverage type invariants and be faster than starting from a generic byte stream.
+
+``` rust
+#[cfg(feature = "bitcoin")]
+{
+    use bitcoin_slices::{bsl, bitcoin, Parse};
+
+    let tx_out_bytes = hex_lit::hex!("ffffffffffffffff0100");
+    let tx_out = bsl::TxOut::parse(&tx_out_bytes).unwrap().parsed_owned();
+    let tx_out_bitcoin: bitcoin::TxOut =
+        bitcoin::consensus::deserialize(&tx_out_bytes[..]).unwrap();
+
+    let tx_out_back: bitcoin::TxOut = tx_out.into();
+
+assert_eq!(tx_out_back, tx_out_bitcoin);
+}
+```
 
 ## Test
 
@@ -115,8 +170,8 @@ cargo +nightly fuzz run transaction
 Other target available in `fuzz/fuzz_targets`
 
 
-Miniminze corpus:
-```
+Minimize corpus:
+```sh
 cargo +nightly fuzz cmin transaction
 ```
 
@@ -124,7 +179,7 @@ cargo +nightly fuzz cmin transaction
 
 To build docs:
 
-```
+```sh
 RUSTDOCFLAGS="--cfg docsrs" cargo +nightly doc --all-features --open
 ```
 
@@ -134,10 +189,3 @@ RUSTDOCFLAGS="--cfg docsrs" cargo +nightly doc --all-features --open
 * [Bitiodine](https://github.com/mikispag/bitiodine) use similar visitor pattern (parser credited to Mathias Svensson) 
 * Some previous work on the idea to parse while reducing allocations in this [PR](https://github.com/rust-bitcoin/rust-bitcoin/pull/672)
 * Matt Corallo mentioned something like this in a [comment](https://github.com/rust-bitcoin/rust-bitcoin/pull/672#pullrequestreview-769198159) in that PR
-
-## TODO
-
-- [ ] create rotating buffer that consume and produce keeping a linear memory (rotate back when it can't append), 
-this would overcome a bit the absence of streaming API
-- [ ] implements network types
-- [ ] add limited time fuzzing in CI

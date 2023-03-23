@@ -1,15 +1,9 @@
 #![cfg_attr(docsrs, feature(doc_cfg))]
 #![deny(missing_docs)]
-
-//! # Bitcoin Slices
-//!
-//! ZERO allocations parse library for Bitcoin data structures available in the [`bsl`] module.
-//!
-//! Data can be accessed via the [`crate::Visitor`]s during parsing.
-
 #![cfg_attr(bench, feature(test))]
 #![cfg_attr(not(test), no_std)]
 #![warn(missing_docs)]
+#![doc = include_str!("../README.md")]
 
 #[cfg(bench)]
 extern crate test;
@@ -40,6 +34,10 @@ pub use sha2;
 #[cfg(feature = "redb")]
 #[cfg_attr(docsrs, doc(cfg(feature = "redb")))]
 pub use redb;
+
+#[cfg(feature = "bitcoin")]
+#[cfg_attr(docsrs, doc(cfg(feature = "bitcoin")))]
+pub use bitcoin;
 
 #[cfg(any(test, bench))]
 pub mod test_common {
