@@ -40,13 +40,12 @@ impl<'a> TxOuts<'a> {
     pub fn n(&self) -> usize {
         self.n
     }
-
     /// Returns an iterator over [`bitcoin::TxOut`]
     ///
     /// If possible is better to use [`Visitor::visit_tx_out`] to avoid double pass, however, it may
     /// be conveniet to iterate in case you already have validated the slice, for example some data
     /// in a db.
-    pub fn iter(&self) -> impl Iterator<Item = TxOut> {
+    pub fn iter(&self) -> TxOutIterator<'_> {
         let len = parse_len(self.slice).expect("len granted by parsing");
         TxOutIterator {
             elements: len.n() as usize,
@@ -56,7 +55,21 @@ impl<'a> TxOuts<'a> {
     }
 }
 
-struct TxOutIterator<'a> {
+impl<'a> IntoIterator for &'a TxOuts<'a> {
+    type Item = TxOut<'a>;
+    type IntoIter = TxOutIterator<'a>;
+
+    /// Returns an iterator over [`bitcoin::TxOut`]
+    ///
+    /// If possible is better to use [`Visitor::visit_tx_out`] to avoid double pass, however, it may
+    /// be conveniet to iterate in case you already have validated the slice, for example some data
+    /// in a db.
+    fn into_iter(self) -> TxOutIterator<'a> {
+        self.iter()
+    }
+}
+
+pub struct TxOutIterator<'a> {
     elements: usize,
     offset: usize,
     tx_outs: &'a TxOuts<'a>,
@@ -215,6 +228,14 @@ mod test {
         assert_eq!(tx_out.script_pubkey(), &[1]);
 
         assert!(iter.next().is_none());
+
+        for tx_out in &tx_outs {
+            assert_eq!(tx_out.value(), 0xffffffffffffffff);
+        }
+        for (i, tx_out) in tx_outs.into_iter().enumerate() {
+            assert_eq!(tx_out.value(), 0xffffffffffffffff);
+            assert_eq!(tx_out.script_pubkey(), &[i as u8]);
+        }
     }
 
     #[cfg(target_pointer_width = "64")]
