@@ -19,7 +19,8 @@ impl Visitor for Sum {
     }
 }
 let mut sum = Sum(0);
-let block = bsl::Block::visit(bitcoin_test_data::blocks::mainnet_702861(), &mut sum).unwrap();
+let block_bytes: &[u8] = bitcoin_test_data::blocks::mainnet_702861();
+let block = bsl::Block::visit(block_bytes, &mut sum).unwrap();
 assert_eq!(sum.0, 2_883_682_728_990)
 ```
 
