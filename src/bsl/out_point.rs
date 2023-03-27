@@ -88,7 +88,7 @@ impl<'a> Into<bitcoin::OutPoint> for &OutPoint<'a> {
     fn into(self) -> bitcoin::OutPoint {
         use bitcoin::hashes::Hash;
         bitcoin::OutPoint {
-            txid: bitcoin::Txid::from_inner(self.txid().try_into().unwrap()),
+            txid: bitcoin::Txid::from_byte_array(self.txid().try_into().unwrap()),
             vout: self.vout(),
         }
     }
