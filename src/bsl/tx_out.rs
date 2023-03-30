@@ -41,7 +41,6 @@ impl<'a> AsRef<[u8]> for TxOut<'a> {
 }
 
 #[cfg(feature = "redb")]
-#[cfg_attr(docsrs, doc(cfg(feature = "redb")))]
 impl<'o> redb::RedbValue for TxOut<'o> {
     type SelfType<'a> = TxOut<'a>
     where
@@ -78,7 +77,6 @@ impl<'o> redb::RedbValue for TxOut<'o> {
 }
 
 #[cfg(feature = "bitcoin")]
-#[cfg_attr(docsrs, doc(cfg(feature = "bitcoin")))]
 impl<'a> Into<bitcoin::TxOut> for &TxOut<'a> {
     fn into(self) -> bitcoin::TxOut {
         bitcoin::TxOut {
@@ -89,7 +87,6 @@ impl<'a> Into<bitcoin::TxOut> for &TxOut<'a> {
 }
 
 #[cfg(feature = "bitcoin")]
-#[cfg_attr(docsrs, doc(cfg(feature = "bitcoin")))]
 impl<'a> Into<bitcoin::TxOut> for TxOut<'a> {
     fn into(self) -> bitcoin::TxOut {
         (&self).into()

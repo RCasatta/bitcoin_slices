@@ -103,7 +103,6 @@ impl<'a> AsRef<[u8]> for TxOuts<'a> {
 }
 
 #[cfg(feature = "redb")]
-#[cfg_attr(docsrs, doc(cfg(feature = "redb")))]
 impl<'o> redb::RedbValue for TxOuts<'o> {
     type SelfType<'a> = TxOuts<'a>
     where

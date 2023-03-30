@@ -40,7 +40,6 @@ impl<'a> OutPoint<'a> {
 }
 
 #[cfg(feature = "redb")]
-#[cfg_attr(docsrs, doc(cfg(feature = "redb")))]
 impl<'o> redb::RedbValue for OutPoint<'o> {
     type SelfType<'a> = OutPoint<'a>
     where
@@ -75,7 +74,6 @@ impl<'o> redb::RedbValue for OutPoint<'o> {
 }
 
 #[cfg(feature = "redb")]
-#[cfg_attr(docsrs, doc(cfg(feature = "redb")))]
 impl<'o> redb::RedbKey for OutPoint<'o> {
     fn compare(data1: &[u8], data2: &[u8]) -> core::cmp::Ordering {
         data1.cmp(data2)
@@ -83,7 +81,6 @@ impl<'o> redb::RedbKey for OutPoint<'o> {
 }
 
 #[cfg(feature = "bitcoin")]
-#[cfg_attr(docsrs, doc(cfg(feature = "bitcoin")))]
 impl<'a> Into<bitcoin::OutPoint> for &OutPoint<'a> {
     fn into(self) -> bitcoin::OutPoint {
         use bitcoin::hashes::Hash;
@@ -95,7 +92,6 @@ impl<'a> Into<bitcoin::OutPoint> for &OutPoint<'a> {
 }
 
 #[cfg(feature = "bitcoin")]
-#[cfg_attr(docsrs, doc(cfg(feature = "bitcoin")))]
 impl<'a> Into<bitcoin::OutPoint> for OutPoint<'a> {
     fn into(self) -> bitcoin::OutPoint {
         (&self).into()

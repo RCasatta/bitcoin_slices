@@ -67,7 +67,6 @@ impl<'a> BlockHeader<'a> {
 
     /// Returns the hash of this block header
     #[cfg(feature = "bitcoin_hashes")]
-    #[cfg_attr(docsrs, doc(cfg(feature = "bitcoin_hashes")))]
     pub fn block_hash(&self) -> crate::bitcoin_hashes::sha256d::Hash {
         use crate::bitcoin_hashes::{sha256d, Hash, HashEngine};
         let mut engine = sha256d::Hash::engine();
@@ -78,7 +77,6 @@ impl<'a> BlockHeader<'a> {
     /// Calculate the block hash using the sha2 crate.
     /// NOTE: the result type is not displayed backwards when converted to string.
     #[cfg(feature = "sha2")]
-    #[cfg_attr(docsrs, doc(cfg(feature = "sha2")))]
     pub fn block_hash_sha2(
         &self,
     ) -> crate::sha2::digest::generic_array::GenericArray<u8, crate::sha2::digest::typenum::U32>

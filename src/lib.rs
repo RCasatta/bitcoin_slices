@@ -1,4 +1,4 @@
-#![cfg_attr(docsrs, feature(doc_cfg))]
+#![cfg_attr(docsrs, feature(doc_auto_cfg))]
 #![deny(missing_docs)]
 #![cfg_attr(bench, feature(test))]
 #![cfg_attr(not(test), no_std)]
@@ -24,19 +24,15 @@ pub use visit::{EmptyVisitor, Parse, Visit, Visitor};
 pub type SResult<'a, T> = Result<ParseResult<'a, T>, Error>;
 
 #[cfg(feature = "bitcoin_hashes")]
-#[cfg_attr(docsrs, doc(cfg(feature = "bitcoin_hashes")))]
 pub use bitcoin_hashes;
 
 #[cfg(feature = "sha2")]
-#[cfg_attr(docsrs, doc(cfg(feature = "sha2")))]
 pub use sha2;
 
 #[cfg(feature = "redb")]
-#[cfg_attr(docsrs, doc(cfg(feature = "redb")))]
 pub use redb;
 
 #[cfg(feature = "bitcoin")]
-#[cfg_attr(docsrs, doc(cfg(feature = "bitcoin")))]
 pub use bitcoin;
 
 #[cfg(any(test, bench))]

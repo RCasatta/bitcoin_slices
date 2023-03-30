@@ -98,7 +98,6 @@ impl<'a> Transaction<'a> {
     /// If the transaction is legacy (non-segwit) this identifier could be malleated, meaning
     /// the same transaction effect could have different identifiers.
     #[cfg(feature = "bitcoin_hashes")]
-    #[cfg_attr(docsrs, doc(cfg(feature = "bitcoin_hashes")))]
     pub fn txid(&self) -> crate::bitcoin_hashes::sha256d::Hash {
         use crate::bitcoin_hashes::{sha256d, Hash, HashEngine};
         let (a, b, c) = self.txid_preimage();
@@ -112,7 +111,6 @@ impl<'a> Transaction<'a> {
     /// Calculate the txid using the sha2 crate.
     /// NOTE: the result type is not displayed backwards when converted to string.
     #[cfg(feature = "sha2")]
-    #[cfg_attr(docsrs, doc(cfg(feature = "sha2")))]
     pub fn txid_sha2(
         &self,
     ) -> crate::sha2::digest::generic_array::GenericArray<u8, crate::sha2::digest::typenum::U32>
