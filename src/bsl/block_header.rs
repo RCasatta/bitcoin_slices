@@ -182,9 +182,11 @@ mod bench {
             black_box(&hash);
         });
     }
+
+    #[cfg(feature = "bitcoin")]
     #[bench]
     pub fn block_hash_bitcoin(bh: &mut Bencher) {
-        let block_header: bitcoin::BlockHeader =
+        let block_header: bitcoin::blockdata::block::Header =
             deserialize(&crate::test_common::GENESIS_BLOCK_HEADER).unwrap();
 
         bh.iter(|| {
