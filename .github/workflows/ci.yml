@@ -31,9 +31,7 @@ jobs:
   bench:
     name: Bench Suite
     runs-on: ubuntu-latest
-    env:
-      RUSTFLAGS: --cfg=bench
     steps:
       - uses: actions/checkout@v3
       - uses: dtolnay/rust-toolchain@nightly
-      - run: cargo bench --all-features
+      - run: RUSTFLAGS='--cfg=bench' cargo +nightly bench --all-features
