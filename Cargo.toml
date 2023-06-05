@@ -7,6 +7,7 @@ description = "Parse Bitcoin objects without allocations"
 repository = "https://github.com/RCasatta/bitcoin_slices"
 documentation = "https://docs.rs/bitcoin_slices/"
 keywords = ["bitcoin", "blocks", "transaction", "parse", "slices"]
+categories = ["no-std", "cryptography::cryptocurrencies", "parsing"]
 readme = "README.md"
 license = "MIT"
 
