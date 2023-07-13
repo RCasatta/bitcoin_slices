@@ -33,3 +33,6 @@ tempfile = "3.4.0"
 [package.metadata.docs.rs]
 all-features = true
 rustdoc-args = ["--cfg", "docsrs"]
+
+[patch.crates-io]
+bitcoin = { git="https://github.com/RCasatta/rust-bitcoin", branch="hex_macro_fix", optional = true }
