@@ -236,16 +236,16 @@ mod test {
     #[cfg(feature = "bitcoin")]
     #[test]
     fn test_weight() {
+        fn check_weight(tx_bytes: &[u8]) {
+            let tx = Transaction::parse(&tx_bytes[..]).unwrap().parsed_owned();
+            let bitcoin_tx: bitcoin::Transaction =
+                bitcoin::consensus::deserialize(&tx_bytes[..]).unwrap();
+            assert_eq!(tx.weight(), bitcoin_tx.weight().to_wu());
+        }
+
         check_weight(&GENESIS_TX[..]);
         let segwit_tx = hex!("010000000001010000000000000000000000000000000000000000000000000000000000000000ffffffff3603da1b0e00045503bd5704c7dd8a0d0ced13bb5785010800000000000a636b706f6f6c122f4e696e6a61506f6f6c2f5345475749542fffffffff02b4e5a212000000001976a914876fbb82ec05caa6af7a3b5e5a983aae6c6cc6d688ac0000000000000000266a24aa21a9edf91c46b49eb8a29089980f02ee6b57e7d63d33b18b4fddac2bcd7db2a39837040120000000000000000000000000000000000000000000000000000000000000000000000000");
         check_weight(&segwit_tx);
-    }
-
-    fn check_weight(tx_bytes: &[u8]) {
-        let tx = Transaction::parse(&tx_bytes[..]).unwrap().parsed_owned();
-        let bitcoin_tx: bitcoin::Transaction =
-            bitcoin::consensus::deserialize(&tx_bytes[..]).unwrap();
-        assert_eq!(tx.weight(), bitcoin_tx.weight().to_wu());
     }
 }
 

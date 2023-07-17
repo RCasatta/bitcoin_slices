@@ -163,12 +163,10 @@ mod test {
 
 #[cfg(bench)]
 mod bench {
-    use bitcoin::consensus::deserialize;
-    use test::{black_box, Bencher};
 
     #[cfg(feature = "bitcoin_hashes")]
     #[bench]
-    pub fn block_hash(bh: &mut Bencher) {
+    pub fn block_hash(bh: &mut test::Bencher) {
         use crate::bsl::BlockHeader;
         use crate::Parse;
         let block_header = BlockHeader::parse(&crate::test_common::GENESIS_BLOCK_HEADER)
@@ -177,19 +175,21 @@ mod bench {
 
         bh.iter(|| {
             let hash = block_header.block_hash();
-            black_box(&hash);
+            test::black_box(&hash);
         });
     }
 
     #[cfg(feature = "bitcoin")]
     #[bench]
-    pub fn block_hash_bitcoin(bh: &mut Bencher) {
+    pub fn block_hash_bitcoin(bh: &mut test::Bencher) {
+        use bitcoin::consensus::deserialize;
+
         let block_header: bitcoin::blockdata::block::Header =
             deserialize(&crate::test_common::GENESIS_BLOCK_HEADER).unwrap();
 
         bh.iter(|| {
             let hash = block_header.block_hash();
-            black_box(&hash);
+            test::black_box(&hash);
         });
     }
 }
