@@ -40,7 +40,7 @@ impl<'a> TxOuts<'a> {
     pub fn n(&self) -> usize {
         self.n
     }
-    /// Returns an iterator over [`bitcoin::TxOut`]
+    /// Returns an iterator over [`TxOut`]
     ///
     /// If possible is better to use [`Visitor::visit_tx_out`] to avoid double pass, however, it may
     /// be conveniet to iterate in case you already have validated the slice, for example some data
@@ -59,7 +59,7 @@ impl<'a> IntoIterator for &'a TxOuts<'a> {
     type Item = TxOut<'a>;
     type IntoIter = TxOutIterator<'a>;
 
-    /// Returns an iterator over [`bitcoin::TxOut`]
+    /// Returns an iterator over [`TxOut`]
     ///
     /// If possible is better to use [`Visitor::visit_tx_out`] to avoid double pass, however, it may
     /// be conveniet to iterate in case you already have validated the slice, for example some data
