@@ -69,6 +69,46 @@ impl<'a> AsRef<[u8]> for Block<'a> {
     }
 }
 
+#[cfg(all(feature = "bitcoin", feature = "sha2"))]
+pub mod visitor {
+    use core::ops::ControlFlow;
+
+    use bitcoin::consensus::Decodable;
+    use bitcoin::hashes::Hash;
+
+    /// Implement a visitor to find a Transaction in a Block given its txid
+    pub struct FindTransaction {
+        to_find: bitcoin::Txid,
+        tx_found: Option<bitcoin::Transaction>,
+    }
+    impl FindTransaction {
+        /// Creates [`FindTransaction`] for txid `to_find`
+        pub fn new(to_find: bitcoin::Txid) -> Self {
+            Self {
+                to_find,
+                tx_found: None,
+            }
+        }
+        /// Returns the transaction found if any
+        pub fn tx_found(self) -> Option<bitcoin::Transaction> {
+            self.tx_found
+        }
+    }
+    impl crate::Visitor for FindTransaction {
+        fn visit_transaction(&mut self, tx: &crate::bsl::Transaction) -> ControlFlow<()> {
+            let current = bitcoin::Txid::from_slice(tx.txid_sha2().as_slice()).expect("32");
+            if self.to_find == current {
+                let tx_found = bitcoin::Transaction::consensus_decode(&mut tx.as_ref())
+                    .expect("slice validated");
+                self.tx_found = Some(tx_found);
+                ControlFlow::Break(())
+            } else {
+                ControlFlow::Continue(())
+            }
+        }
+    }
+}
+
 #[cfg(test)]
 mod test {
     use crate::{
@@ -99,10 +139,31 @@ mod test {
         // assert!(iter.next().is_none())
     }
 
+    #[cfg(all(feature = "bitcoin", feature = "sha2"))]
+    #[test]
+    fn find_tx() {
+        use crate::Visit;
+        use bitcoin_test_data::blocks::mainnet_702861;
+        use core::str::FromStr;
+
+        let txid = bitcoin::Txid::from_str(
+            "416a5f96cb63e7649f6f272e7f82a43a97bcf6cfc46184c733344de96ff1e433",
+        )
+        .unwrap();
+        let mut visitor = crate::bsl::FindTransaction::new(txid.clone());
+        let _ = Block::visit(&mainnet_702861(), &mut visitor);
+        let tx = visitor.tx_found().unwrap();
+        assert_eq!(tx.txid(), txid);
+    }
+
     #[cfg(target_pointer_width = "64")]
     #[test]
     fn size_of() {
+        use core::ops::ControlFlow;
+
         assert_eq!(std::mem::size_of::<Block>(), 56);
+
+        assert_eq!(std::mem::size_of::<ControlFlow<()>>(), 1);
     }
 }
 
@@ -164,6 +225,8 @@ mod bench {
     #[cfg(feature = "bitcoin_hashes")]
     #[bench]
     pub fn hash_block_txs(bh: &mut Bencher) {
+        use core::ops::ControlFlow;
+
         use bitcoin::hashes::sha256d;
 
         bh.iter(|| {
@@ -173,8 +236,9 @@ mod bench {
                 fn visit_block_begin(&mut self, total_transactions: usize) {
                     self.0.reserve(total_transactions);
                 }
-                fn visit_transaction(&mut self, tx: &crate::bsl::Transaction) {
+                fn visit_transaction(&mut self, tx: &crate::bsl::Transaction) -> ControlFlow<()> {
                     self.0.push(tx.txid());
+                    ControlFlow::Continue(())
                 }
             }
 
@@ -189,6 +253,8 @@ mod bench {
     #[cfg(feature = "sha2")]
     #[bench]
     pub fn hash_block_txs_sha2(bh: &mut Bencher) {
+        use core::ops::ControlFlow;
+
         bh.iter(|| {
             struct VisitTx(
                 Vec<
@@ -203,8 +269,9 @@ mod bench {
                 fn visit_block_begin(&mut self, total_transactions: usize) {
                     self.0.reserve(total_transactions);
                 }
-                fn visit_transaction(&mut self, tx: &crate::bsl::Transaction) {
+                fn visit_transaction(&mut self, tx: &crate::bsl::Transaction) -> ControlFlow<()> {
                     self.0.push(tx.txid_sha2());
+                    ControlFlow::Continue(())
                 }
             }
 
@@ -227,6 +294,47 @@ mod bench {
             }
             assert_eq!(tx_hashes.len(), 2500);
             black_box((&block, tx_hashes));
+        });
+    }
+
+    #[cfg(all(feature = "bitcoin", feature = "sha2"))]
+    #[bench]
+    pub fn find_tx(bh: &mut Bencher) {
+        use std::str::FromStr;
+        let txid = bitcoin::Txid::from_str(
+            "416a5f96cb63e7649f6f272e7f82a43a97bcf6cfc46184c733344de96ff1e433",
+        )
+        .unwrap();
+
+        bh.iter(|| {
+            let mut visitor = crate::bsl::FindTransaction::new(txid.clone());
+            let _ = Block::visit(&mainnet_702861(), &mut visitor);
+            let tx = visitor.tx_found().unwrap();
+            assert_eq!(tx.txid(), txid);
+            core::hint::black_box(tx);
+        });
+    }
+
+    #[cfg(feature = "bitcoin")]
+    #[bench]
+    pub fn find_tx_bitcoin(bh: &mut Bencher) {
+        use std::str::FromStr;
+        let txid = bitcoin::Txid::from_str(
+            "416a5f96cb63e7649f6f272e7f82a43a97bcf6cfc46184c733344de96ff1e433",
+        )
+        .unwrap();
+        bh.iter(|| {
+            let block: bitcoin::Block = deserialize(mainnet_702861()).unwrap();
+            let mut tx = None;
+            for current in block.txdata {
+                if current.txid() == txid {
+                    tx = Some(current);
+                    break;
+                }
+            }
+            let tx = tx.unwrap();
+            assert_eq!(tx.txid(), txid);
+            core::hint::black_box(&tx);
         });
     }
 }

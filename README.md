@@ -128,6 +128,8 @@ test bsl::block::bench::block_deserialize            ... bench:     289,421 ns/i
 test bsl::block::bench::block_deserialize_bitcoin    ... bench:   2,719,666 ns/iter (+/- 459,186)
 test bsl::block::bench::block_sum_outputs            ... bench:     288,248 ns/iter (+/- 39,013)
 test bsl::block::bench::block_sum_outputs_bitcoin    ... bench:   2,607,791 ns/iter (+/- 321,212)
+test bsl::block::bench::find_tx                      ... bench:   1,012,297 ns/iter (+/- 6,278)
+test bsl::block::bench::find_tx_bitcoin              ... bench:   8,632,416 ns/iter (+/- 89,751)
 test bsl::block::bench::hash_block_txs               ... bench:   8,406,341 ns/iter (+/- 938,119)
 test bsl::block::bench::hash_block_txs_bitcoin       ... bench:  11,843,590 ns/iter (+/- 1,052,109)
 test bsl::block::bench::hash_block_txs_sha2          ... bench:   7,891,956 ns/iter (+/- 1,047,439)

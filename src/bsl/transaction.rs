@@ -1,4 +1,4 @@
-use core::num::NonZeroU32;
+use core::{num::NonZeroU32, ops::ControlFlow};
 
 use crate::{
     bsl::{TxIns, TxOuts, Witnesses},
@@ -41,8 +41,10 @@ impl<'a> Visit<'a> for Transaction<'a> {
                     slice: &slice[..consumed],
                     inputs_outputs_len: NonZeroU32::new(inputs_outputs_len as u32), // inputs_outputs_len is at least 2 bytes if both empty, they contain the compact int len
                 };
-                visit.visit_transaction(&tx);
-                Ok(ParseResult::new(&slice[consumed..], tx))
+                match visit.visit_transaction(&tx) {
+                    ControlFlow::Continue(_) => Ok(ParseResult::new(&slice[consumed..], tx)),
+                    ControlFlow::Break(_) => Err(Error::VisitBreak),
+                }
             } else {
                 Err(Error::UnknownSegwitFlag(segwit_flag_u8))
             }
@@ -55,8 +57,10 @@ impl<'a> Visit<'a> for Transaction<'a> {
                 slice: &slice[..consumed],
                 inputs_outputs_len: None,
             };
-            visit.visit_transaction(&tx);
-            Ok(ParseResult::new(&slice[consumed..], tx))
+            match visit.visit_transaction(&tx) {
+                ControlFlow::Continue(_) => Ok(ParseResult::new(&slice[consumed..], tx)),
+                ControlFlow::Break(_) => Err(Error::VisitBreak),
+            }
         }
     }
 }

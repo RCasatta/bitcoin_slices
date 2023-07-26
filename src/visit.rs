@@ -67,7 +67,9 @@ pub trait Visitor {
     ///
     /// Note you can't access inputs and outputs from the transaction, you need [`Visitor::visit_tx_ins()`]
     /// or [`Visitor::visit_tx_outs()`]
-    fn visit_transaction(&mut self, tx: &bsl::Transaction) {}
+    fn visit_transaction(&mut self, tx: &bsl::Transaction) -> core::ops::ControlFlow<()> {
+        core::ops::ControlFlow::Continue(())
+    }
 
     /// We are going to visit `total_inputs` transaction inputs
     fn visit_tx_ins(&mut self, total_inputs: usize) {}

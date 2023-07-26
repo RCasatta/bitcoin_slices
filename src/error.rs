@@ -21,6 +21,10 @@ pub enum Error {
     /// The decoded varint is not in it's minimal form, eg. `0xFD0100` it's decoded as `1` but it's
     /// minimal encoding is `0x01`
     NonMinimalVarInt,
+
+    /// The implemented visitor decided to break by returning `true` from [`crate::visit::Visitor::visit_transaction`]
+    /// for example because it found what it was searching for
+    VisitBreak,
 }
 
 #[cfg(test)]
