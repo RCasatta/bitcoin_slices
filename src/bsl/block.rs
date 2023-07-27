@@ -169,6 +169,8 @@ mod test {
 
 #[cfg(bench)]
 mod bench {
+    use core::ops::ControlFlow;
+
     use crate::bsl::{Block, TxOut};
     use crate::{Parse, Visit, Visitor};
     use bitcoin::consensus::deserialize;
@@ -196,8 +198,9 @@ mod bench {
         bh.iter(|| {
             struct Sum(u64);
             impl Visitor for Sum {
-                fn visit_tx_out(&mut self, _vout: usize, tx_out: &TxOut) {
+                fn visit_tx_out(&mut self, _vout: usize, tx_out: &TxOut) -> ControlFlow<()> {
                     self.0 += tx_out.value();
+                    ControlFlow::Continue(())
                 }
             }
             let mut sum = Sum(0);

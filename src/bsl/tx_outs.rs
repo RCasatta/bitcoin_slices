@@ -1,3 +1,5 @@
+use core::ops::ControlFlow;
+
 use super::len::{parse_len, Len};
 use crate::bsl::TxOut;
 use crate::{Parse, ParseResult, SResult, Visit, Visitor};
@@ -20,7 +22,9 @@ impl<'a> Visit<'a> for TxOuts<'a> {
             let tx_out = TxOut::parse(remaining)?;
             remaining = tx_out.remaining();
             consumed += tx_out.consumed();
-            visit.visit_tx_out(i, tx_out.parsed());
+            if let ControlFlow::Break(_) = visit.visit_tx_out(i, tx_out.parsed()) {
+                return Err(crate::Error::VisitBreak);
+            }
         }
         Ok(ParseResult::new(
             &slice[consumed..],
@@ -141,6 +145,8 @@ impl<'o> redb::RedbValue for TxOuts<'o> {
 
 #[cfg(test)]
 mod test {
+    use core::ops::ControlFlow;
+
     use hex_lit::hex;
 
     use crate::{
@@ -181,10 +187,11 @@ mod test {
 
         struct VisitTxOuts(usize);
         impl Visitor for VisitTxOuts {
-            fn visit_tx_out(&mut self, vout: usize, tx_out: &TxOut) {
+            fn visit_tx_out(&mut self, vout: usize, tx_out: &TxOut) -> ControlFlow<()> {
                 assert_eq!(vout, self.0);
                 self.0 += 1;
                 assert_eq!(tx_out.value(), u64::MAX);
+                ControlFlow::Continue(())
             }
 
             fn visit_tx_outs(&mut self, n: usize) {
@@ -195,19 +202,22 @@ mod test {
 
         struct IsMine(Vec<u8>, bool);
         impl Visitor for IsMine {
-            fn visit_tx_out(&mut self, _vout: usize, tx_out: &TxOut) {
+            fn visit_tx_out(&mut self, _vout: usize, tx_out: &TxOut) -> ControlFlow<()> {
                 assert_eq!(tx_out.value(), u64::MAX);
                 if tx_out.script_pubkey() == self.0 {
                     self.1 = true;
+                    ControlFlow::Break(())
+                } else {
+                    ControlFlow::Continue(())
                 }
             }
         }
         let mut visitor = IsMine(vec![0u8], false);
-        TxOuts::visit(&tx_outs, &mut visitor).unwrap();
+        let _ = TxOuts::visit(&tx_outs, &mut visitor);
         assert!(visitor.1);
 
         let mut visitor = IsMine(vec![1u8], false);
-        TxOuts::visit(&tx_outs, &mut visitor).unwrap();
+        let _ = TxOuts::visit(&tx_outs, &mut visitor);
         assert!(!visitor.1);
     }
 

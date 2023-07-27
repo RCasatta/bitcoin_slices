@@ -1,3 +1,5 @@
+use core::ops::ControlFlow;
+
 use crate::bsl::Witness;
 use crate::{ParseResult, SResult, Visit};
 
@@ -28,7 +30,9 @@ impl<'a> Witnesses<'a> {
         let mut consumed = 0;
         let mut all_empty = true;
         for i in 0..total_inputs {
-            visit.visit_witness(i);
+            if let ControlFlow::Break(_) = visit.visit_witness(i) {
+                return Err(crate::Error::VisitBreak);
+            }
 
             let witness = Witness::visit(remaining, visit)?;
             visit.visit_witness_end();
@@ -54,6 +58,8 @@ impl<'a> Witnesses<'a> {
 
 #[cfg(test)]
 mod test {
+    use core::ops::ControlFlow;
+
     use crate::{bsl::Witnesses, Visitor};
     use hex_lit::hex;
 
@@ -75,8 +81,9 @@ mod test {
             witness_el_i: usize,
         }
         impl Visitor for V {
-            fn visit_witness(&mut self, vin: usize) {
+            fn visit_witness(&mut self, vin: usize) -> ControlFlow<()> {
                 assert_eq!(vin, self.witness_vin);
+                ControlFlow::Continue(())
             }
             fn visit_witness_total_element(&mut self, witness_total: usize) {
                 match self.witness_vin {

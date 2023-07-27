@@ -1,3 +1,5 @@
+use core::ops::ControlFlow;
+
 use super::len::{parse_len, Len};
 use crate::bsl::TxIn;
 use crate::{Parse, ParseResult, SResult, Visit, Visitor};
@@ -20,7 +22,9 @@ impl<'a> Visit<'a> for TxIns<'a> {
             let tx_in = TxIn::parse(remaining)?;
             remaining = tx_in.remaining();
             consumed += tx_in.consumed();
-            visit.visit_tx_in(i, tx_in.parsed())
+            if let ControlFlow::Break(_) = visit.visit_tx_in(i, tx_in.parsed()) {
+                return Err(crate::Error::VisitBreak);
+            }
         }
 
         Ok(ParseResult::new(
@@ -53,6 +57,8 @@ impl<'a> TxIns<'a> {}
 
 #[cfg(test)]
 mod test {
+    use core::ops::ControlFlow;
+
     use hex_lit::hex;
 
     use crate::{
@@ -100,10 +106,11 @@ mod test {
 
         struct VisitTxIns(usize);
         impl Visitor for VisitTxIns {
-            fn visit_tx_in(&mut self, vin: usize, tx_in: &TxIn) {
+            fn visit_tx_in(&mut self, vin: usize, tx_in: &TxIn) -> ControlFlow<()> {
                 assert_eq!(vin, self.0);
                 self.0 += 1;
                 assert_eq!(tx_in.sequence(), 4294967295u32);
+                ControlFlow::Continue(())
             }
             fn visit_tx_ins(&mut self, n: usize) {
                 assert_eq!(n, 2);
@@ -113,19 +120,22 @@ mod test {
 
         struct IsMine(Vec<u8>, bool);
         impl Visitor for IsMine {
-            fn visit_tx_in(&mut self, _vin: usize, tx_in: &TxIn) {
+            fn visit_tx_in(&mut self, _vin: usize, tx_in: &TxIn) -> ControlFlow<()> {
                 assert_eq!(tx_in.sequence(), 4294967295u32);
                 if tx_in.script_sig() == self.0 {
                     self.1 = true;
+                    ControlFlow::Break(())
+                } else {
+                    ControlFlow::Continue(())
                 }
             }
         }
         let mut is_mine = IsMine(hex!("493046022100f93bb0e7d8db7bd46e40132d1f8242026e045f03a0efe71bbb8e3f475e970d790221009337cd7f1f929f00cc6ff01f03729b069a7c21b59b1736ddfee5db5946c5da8c0121033b9b137ee87d5a812d6f506efdd37f0affa7ffc310711c06c7f3e097c9447c52").to_vec(), false);
-        TxIns::visit(&tx_ins[..], &mut is_mine).unwrap();
+        let _ = TxIns::visit(&tx_ins[..], &mut is_mine);
         assert!(is_mine.1);
 
         let mut is_mine = IsMine(vec![1u8], false);
-        TxIns::visit(&tx_ins[..], &mut is_mine).unwrap();
+        let _ = TxIns::visit(&tx_ins[..], &mut is_mine);
         assert!(!is_mine.1);
     }
 

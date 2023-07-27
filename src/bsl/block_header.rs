@@ -1,3 +1,5 @@
+use core::ops::ControlFlow;
+
 use crate::{
     number::{I32, U32},
     slice::read_slice,
@@ -28,7 +30,9 @@ impl<'a> Visit<'a> for BlockHeader<'a> {
             bits: bits.parsed().into(),
             nonce: nonce.parsed().into(),
         };
-        visit.visit_block_header(&header);
+        if let ControlFlow::Break(_) = visit.visit_block_header(&header) {
+            return Err(crate::Error::VisitBreak);
+        }
         Ok(ParseResult::new(nonce.remaining(), header))
     }
 }

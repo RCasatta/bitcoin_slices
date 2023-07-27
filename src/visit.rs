@@ -59,7 +59,9 @@ impl<'a, T: Visit<'a>> Parse<'a> for T {
 #[allow(unused)]
 pub trait Visitor {
     /// Visit the block header, called from [`bsl::Block::visit()`] and [`bsl::BlockHeader::visit()`]
-    fn visit_block_header(&mut self, header: &bsl::BlockHeader) {}
+    fn visit_block_header(&mut self, header: &bsl::BlockHeader) -> core::ops::ControlFlow<()> {
+        core::ops::ControlFlow::Continue(())
+    }
     /// Visit the number of transactions in a block, called from [`bsl::Block::visit()`]
     fn visit_block_begin(&mut self, total_transactions: usize) {}
 
@@ -74,15 +76,20 @@ pub trait Visitor {
     /// We are going to visit `total_inputs` transaction inputs
     fn visit_tx_ins(&mut self, total_inputs: usize) {}
     /// Visit transaction input at position `vin`
-    fn visit_tx_in(&mut self, vin: usize, tx_in: &bsl::TxIn) {}
-
+    fn visit_tx_in(&mut self, vin: usize, tx_in: &bsl::TxIn) -> core::ops::ControlFlow<()> {
+        core::ops::ControlFlow::Continue(())
+    }
     /// We are going to visit `total_outputs` transaction outputs
     fn visit_tx_outs(&mut self, total_outputs: usize) {}
     /// Visit transaction output at position `vout`
-    fn visit_tx_out(&mut self, vout: usize, tx_out: &bsl::TxOut) {}
+    fn visit_tx_out(&mut self, vout: usize, tx_out: &bsl::TxOut) -> core::ops::ControlFlow<()> {
+        core::ops::ControlFlow::Continue(())
+    }
 
     /// We are going to visit the witnes of the `vin` input
-    fn visit_witness(&mut self, vin: usize) {}
+    fn visit_witness(&mut self, vin: usize) -> core::ops::ControlFlow<()> {
+        core::ops::ControlFlow::Continue(())
+    }
     /// The following witness has `witness_total` element
     fn visit_witness_total_element(&mut self, witness_total: usize) {}
     /// Visiting the `witness_i`ith element of this witness: `witness_element`

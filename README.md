@@ -14,8 +14,9 @@ Data is accessed by providing [`Visitor`] structs for the data the user is inter
 use bitcoin_slices::{bsl, Visit, Visitor};
 struct Sum(pub u64);
 impl Visitor for Sum {
-    fn visit_tx_out(&mut self, _vout: usize, tx_out: &bsl::TxOut) {
+    fn visit_tx_out(&mut self, _vout: usize, tx_out: &bsl::TxOut) -> core::ops::ControlFlow<()>  {
         self.0 += tx_out.value();
+        core::ops::ControlFlow::Continue(())
     }
 }
 let mut sum = Sum(0);
