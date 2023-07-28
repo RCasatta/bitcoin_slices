@@ -183,6 +183,7 @@ mod bench {
             let block = Block::parse(mainnet_702861()).unwrap();
             black_box(&block);
         });
+        bh.bytes = mainnet_702861().len() as u64;
     }
 
     #[bench]
@@ -191,6 +192,7 @@ mod bench {
             let block: bitcoin::Block = deserialize(mainnet_702861()).unwrap();
             black_box(&block);
         });
+        bh.bytes = mainnet_702861().len() as u64;
     }
 
     #[bench]

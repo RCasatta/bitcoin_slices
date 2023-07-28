@@ -269,6 +269,7 @@ mod bench {
             let tx = Transaction::parse(&BENCH_TX[..]).unwrap().parsed_owned();
             black_box(&tx);
         });
+        bh.bytes = BENCH_TX.len() as u64;
     }
 
     #[bench]
@@ -277,6 +278,7 @@ mod bench {
             let tx: bitcoin::Transaction = deserialize(&BENCH_TX).unwrap();
             black_box(&tx);
         });
+        bh.bytes = BENCH_TX.len() as u64;
     }
 
     #[cfg(feature = "bitcoin_hashes")]
