@@ -15,7 +15,7 @@ jobs:
     steps:
       - uses: actions/checkout@v3
       - uses: dtolnay/rust-toolchain@stable
-      - run: cargo test
+      - run: cargo test --all-features
 
   lints:
     name: Lints

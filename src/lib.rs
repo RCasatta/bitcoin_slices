@@ -15,6 +15,16 @@ mod parse_result;
 mod slice;
 mod visit;
 
+#[cfg(feature = "ser_cache")]
+mod ser_cache;
+
+#[cfg(feature = "ser_cache")]
+#[macro_use]
+extern crate alloc;
+
+#[cfg(feature = "ser_cache")]
+pub use ser_cache::SerCache;
+
 pub use error::Error;
 pub use parse_result::ParseResult;
 pub use slice::read_slice;
