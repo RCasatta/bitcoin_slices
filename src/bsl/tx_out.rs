@@ -72,7 +72,7 @@ impl<'o> redb::RedbValue for TxOut<'o> {
     }
 
     fn type_name() -> redb::TypeName {
-        redb::TypeName::new("TxOut")
+        redb::TypeName::new("bsl::TxOut")
     }
 }
 

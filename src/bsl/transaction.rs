@@ -148,6 +148,50 @@ impl<'a> AsRef<[u8]> for Transaction<'a> {
     }
 }
 
+#[cfg(feature = "redb")]
+impl<'o> redb::RedbValue for Transaction<'o> {
+    type SelfType<'a> = Transaction<'a>
+    where
+        Self: 'a;
+
+    type AsBytes<'a> =  &'a [u8]
+    where
+        Self: 'a;
+
+    fn fixed_width() -> Option<usize> {
+        None
+    }
+
+    fn from_bytes<'a>(data: &'a [u8]) -> Self::SelfType<'a>
+    where
+        Self: 'a,
+    {
+        // TODO this is inefficient, should bsl objects contains only a slice so that this is easy?
+        // (but getting other stuff may be expensive?)
+        // a middle ground could be caching values, and computing them only if needed, for example
+        // for Transaction having inputs_outputs_len enum
+        // * KnownSegwit(usize)
+        // * KnownLegacy(usize)
+        // * Unknown
+        // This method would return `Transaction { slice: data, input_outputs_len: Unknown }`
+        Transaction::parse(data)
+            .expect("inserted data is not a Transaction")
+            .parsed_owned()
+    }
+
+    fn as_bytes<'a, 'b: 'a>(value: &'a Self::SelfType<'b>) -> Self::AsBytes<'a>
+    where
+        Self: 'a,
+        Self: 'b,
+    {
+        value.as_ref()
+    }
+
+    fn type_name() -> redb::TypeName {
+        redb::TypeName::new("bsl::Transaction")
+    }
+}
+
 #[cfg(test)]
 mod test {
     use crate::{bsl::Transaction, test_common::GENESIS_TX, Parse};

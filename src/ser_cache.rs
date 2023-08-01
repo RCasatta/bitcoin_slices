@@ -106,12 +106,21 @@ impl<K: Hash + PartialEq + Eq + core::fmt::Debug> SerCache<K> {
 
         Ok(removed)
     }
-    /// Get the value denoted by key `K` if exist in the cache, `None` otherwise
-    /// // TODO can return &T ?
+
+    /// Get the value as slice at key `K` if exist in the cache, `None` otherwise
     pub fn get(&self, key: &K) -> Option<&[u8]> {
         let index = self.indexes.get(key)?;
 
         Some(&self.buffer[index.begin..index.end])
+    }
+
+    #[cfg(feature = "redb")]
+    /// Get the value at key `K` if exist in the cache, `None` otherwise
+    pub fn get_value<'a, V: redb::RedbValue>(&'a self, key: &K) -> Option<V::SelfType<'a>> {
+        let index = self.indexes.get(key)?;
+        let value = V::from_bytes(&self.buffer[index.begin..index.end]);
+
+        Some(value)
     }
 
     fn remove_range(&mut self, range_to_remove: &Range) -> usize {
@@ -204,10 +213,9 @@ mod tests {
     #[cfg(feature = "bitcoin")]
     #[test]
     fn with_transactions() {
-        use std::collections::HashMap;
-
         use bitcoin::consensus::Decodable;
         use bitcoin_test_data::blocks::mainnet_702861;
+        use std::collections::HashMap;
 
         let block_slice = mainnet_702861();
         let block = bitcoin::Block::consensus_decode(&mut &block_slice[..]).unwrap();
@@ -238,5 +246,21 @@ mod tests {
                 assert_eq!(from_cache, expected);
             }
         }
+    }
+
+    #[cfg(all(feature = "bitcoin", feature = "redb"))]
+    #[test]
+    fn with_transaction_value() {
+        use crate::bsl::Transaction;
+
+        let segwit_tx = hex!("010000000001010000000000000000000000000000000000000000000000000000000000000000ffffffff3603da1b0e00045503bd5704c7dd8a0d0ced13bb5785010800000000000a636b706f6f6c122f4e696e6a61506f6f6c2f5345475749542fffffffff02b4e5a212000000001976a914876fbb82ec05caa6af7a3b5e5a983aae6c6cc6d688ac0000000000000000266a24aa21a9edf91c46b49eb8a29089980f02ee6b57e7d63d33b18b4fddac2bcd7db2a39837040120000000000000000000000000000000000000000000000000000000000000000000000000");
+        let tx = Transaction::parse(&segwit_tx[..]).unwrap().parsed_owned();
+        let txid = tx.txid();
+
+        let mut cache: SerCache<_> = SerCache::new(100_000);
+        cache.insert(txid.clone(), &tx).unwrap();
+        let val = cache.get_value::<Transaction>(&txid).unwrap();
+
+        assert_eq!(val.as_ref(), segwit_tx);
     }
 }

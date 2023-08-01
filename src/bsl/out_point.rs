@@ -69,7 +69,7 @@ impl<'o> redb::RedbValue for OutPoint<'o> {
     }
 
     fn type_name() -> redb::TypeName {
-        redb::TypeName::new("OutPoint")
+        redb::TypeName::new("bsl::OutPoint")
     }
 }
 
