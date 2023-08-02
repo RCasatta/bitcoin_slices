@@ -1,4 +1,4 @@
-use alloc::{boxed::Box, collections::VecDeque, rc::Rc};
+use alloc::{boxed::Box, collections::VecDeque, sync::Arc};
 use core::hash::Hash;
 use hashbrown::HashMap;
 
@@ -8,7 +8,7 @@ pub enum Error {
     ValueAlreadyPresent,
 }
 
-/// A LIFO cache for serializable objects with predictable size and almost no allocations at regime
+/// A FIFO cache for serializable objects with predictable size and almost no allocations at regime
 /// and almost no wasted space.
 ///
 /// The serialized cache requires an allocator.
@@ -35,10 +35,14 @@ pub struct SerCache<K: Hash + PartialEq + Eq + core::fmt::Debug> {
     free_pointer: usize,
 
     /// Pointers to buffer of the serialized objects
-    indexes: HashMap<Rc<K>, Range>,
+    indexes: HashMap<Arc<K>, Range>,
 
     /// Order of the key inserted
-    insertions: VecDeque<Rc<K>>,
+    insertions: VecDeque<Arc<K>>,
+
+    /// The cache is full, at least once it removed an older element to insert a new one.
+    /// Obviously elements can still be inserted but they may remove older elements.
+    full: bool,
 }
 
 #[derive(Debug, PartialEq, Eq, PartialOrd, Ord, Clone)]
@@ -66,6 +70,7 @@ impl<K: Hash + PartialEq + Eq + core::fmt::Debug> SerCache<K> {
             free_pointer: 0,
             indexes: HashMap::new(),
             insertions: VecDeque::new(),
+            full: false,
         }
     }
     /// Insert a value V in the cache, with key K
@@ -89,6 +94,7 @@ impl<K: Hash + PartialEq + Eq + core::fmt::Debug> SerCache<K> {
                 end: self.buffer.len(),
             });
             self.free_pointer = 0;
+            self.full = true;
         }
         let begin = self.free_pointer;
         let end = begin + value.len();
@@ -96,7 +102,7 @@ impl<K: Hash + PartialEq + Eq + core::fmt::Debug> SerCache<K> {
         self.free_pointer = end;
 
         let inserted_range = Range { begin, end };
-        let key = Rc::new(key);
+        let key = Arc::new(key);
         self.indexes.insert(key.clone(), inserted_range.clone());
         self.insertions.push_front(key);
 
@@ -114,6 +120,11 @@ impl<K: Hash + PartialEq + Eq + core::fmt::Debug> SerCache<K> {
         Some(&self.buffer[index.begin..index.end])
     }
 
+    /// Return wether the cache contains the given key
+    pub fn contains(&self, key: &K) -> bool {
+        self.indexes.get(key).is_some()
+    }
+
     #[cfg(feature = "redb")]
     /// Get the value at key `K` if exist in the cache, `None` otherwise
     pub fn get_value<'a, V: redb::RedbValue>(&'a self, key: &K) -> Option<V::SelfType<'a>> {
@@ -121,6 +132,17 @@ impl<K: Hash + PartialEq + Eq + core::fmt::Debug> SerCache<K> {
         let value = V::from_bytes(&self.buffer[index.begin..index.end]);
 
         Some(value)
+    }
+
+    /// Return the number of elements contained in the cache
+    pub fn len(&self) -> usize {
+        self.indexes.len()
+    }
+
+    /// Return wether the cache filled the inner buffer of serialized object and removed at least
+    /// one older element, following inserted elements will likely remove older entries.
+    pub fn full(&self) -> bool {
+        self.full
     }
 
     fn remove_range(&mut self, range_to_remove: &Range) -> usize {
