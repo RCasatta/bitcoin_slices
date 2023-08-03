@@ -24,7 +24,7 @@ bitcoin_hashes = ["dep:bitcoin_hashes"]
 sha2 = ["dep:sha2"]
 redb = ["dep:redb"]
 bitcoin = ["dep:bitcoin", "bitcoin_hashes"]
-ser_cache = ["dep:hashbrown"]
+slice_cache = ["dep:hashbrown"]
 
 [dev-dependencies]
 hex_lit = { version = "0.1", features = ["rust_v_1_46"] }

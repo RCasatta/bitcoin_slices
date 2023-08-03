@@ -26,7 +26,7 @@ pub enum Error {
 ///
 /// The average number of elements in the cache is `size(buffer)/average_size(object)`
 ///   
-pub struct SerCache<K: Hash + PartialEq + Eq + core::fmt::Debug> {
+pub struct SliceCache<K: Hash + PartialEq + Eq + core::fmt::Debug> {
     /// Contains serialized objects one after the other, its size is defined at cache creation,
     /// once full, it starts again from the start
     buffer: Box<[u8]>,
@@ -62,7 +62,7 @@ impl Range {
     }
 }
 
-impl<K: Hash + PartialEq + Eq + core::fmt::Debug> SerCache<K> {
+impl<K: Hash + PartialEq + Eq + core::fmt::Debug> SliceCache<K> {
     /// Create the serialized cache with byte len equal to given `size`
     pub fn new(size: usize) -> Self {
         Self {
@@ -175,7 +175,7 @@ mod tests {
 
     #[test]
     fn insert_get() {
-        let mut cache = SerCache::new(10);
+        let mut cache = SliceCache::new(10);
 
         let k1 = 0;
         let v1 = [1, 2];
@@ -225,7 +225,7 @@ mod tests {
             .parsed_owned();
         let txid = tx.txid();
 
-        let mut cache: SerCache<_> = SerCache::new(100_000);
+        let mut cache: SliceCache<_> = SliceCache::new(100_000);
         cache.insert(txid.clone(), &tx).unwrap();
         let val = cache.get(&txid).unwrap();
 
@@ -248,7 +248,7 @@ mod tests {
             .collect();
 
         let cache_size = 600_000;
-        let mut cache: SerCache<_> = SerCache::new(cache_size);
+        let mut cache: SliceCache<_> = SliceCache::new(cache_size);
 
         let mut bytes_written = 0;
         let mut total_removed = 0;
@@ -279,7 +279,7 @@ mod tests {
         let tx = Transaction::parse(&segwit_tx[..]).unwrap().parsed_owned();
         let txid = tx.txid();
 
-        let mut cache: SerCache<_> = SerCache::new(100_000);
+        let mut cache: SliceCache<_> = SliceCache::new(100_000);
         cache.insert(txid.clone(), &tx).unwrap();
         let val = cache.get_value::<Transaction>(&txid).unwrap();
 
