@@ -150,13 +150,16 @@ impl<'a> AsRef<[u8]> for Transaction<'a> {
 
 #[cfg(feature = "redb")]
 impl<'o> redb::RedbValue for Transaction<'o> {
-    type SelfType<'a> = Transaction<'a>
+    // TODO fix where position once MSRV allows
+    type SelfType<'a>
     where
-        Self: 'a;
+        Self: 'a,
+    = Transaction<'a>;
 
-    type AsBytes<'a> =  &'a [u8]
+    type AsBytes<'a>
     where
-        Self: 'a;
+        Self: 'a,
+    = &'a [u8];
 
     fn fixed_width() -> Option<usize> {
         None
