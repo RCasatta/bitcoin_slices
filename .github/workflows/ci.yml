@@ -1,13 +1,28 @@
 on: [pull_request]
 
 jobs:
-  check:
-    name: Check
+  build:
+    name: Build
     runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        toolchain: ["1.60.0", "1.64.0", "1.66.0", "stable", "nightly"]
     steps:
       - uses: actions/checkout@v3
-      - uses: dtolnay/rust-toolchain@stable
-      - run: cargo check
+      - uses: dtolnay/rust-toolchain@master
+        with:
+          toolchain: ${{ matrix.toolchain }}
+      - run: cargo build --features bitcoin,sha2
+        if: ${{ matrix.toolchain == '1.60.0' }}
+      - run: cargo build --features slice_cache
+        if: ${{ matrix.toolchain == '1.64.0' }}
+      - run: cargo build --features redb
+        if: ${{ matrix.toolchain == '1.66.0' }}
+      - run: cargo build --all-features
+        if: ${{ matrix.toolchain == 'stable' || matrix.toolchain == 'nightly' }}
+      
+        
 
   test:
     name: Test Suite
