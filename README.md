@@ -108,7 +108,7 @@ Moreover, conversions may leverage type invariants and be faster than starting f
 
     let tx_out_back: bitcoin::TxOut = tx_out.into();
 
-assert_eq!(tx_out_back, tx_out_bitcoin);
+    assert_eq!(tx_out_back, tx_out_bitcoin);
 }
 ```
 
