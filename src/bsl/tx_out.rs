@@ -83,7 +83,7 @@ impl<'o> redb::RedbValue for TxOut<'o> {
 impl<'a> Into<bitcoin::TxOut> for &TxOut<'a> {
     fn into(self) -> bitcoin::TxOut {
         bitcoin::TxOut {
-            value: self.value(),
+            value: bitcoin::Amount::from_sat(self.value()),
             script_pubkey: self.script_pubkey().to_vec().into(),
         }
     }
