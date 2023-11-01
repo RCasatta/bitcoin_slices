@@ -220,7 +220,7 @@ mod bench {
                 .txdata
                 .iter()
                 .flat_map(|t| t.output.iter())
-                .fold(0, |acc, e| acc + e.value);
+                .fold(0, |acc, e| acc + e.value.to_sat());
             assert_eq!(sum, 2883682728990);
 
             black_box(&block);
