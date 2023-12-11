@@ -1,6 +1,7 @@
 use alloc::{boxed::Box, collections::VecDeque, sync::Arc};
 use core::hash::Hash;
 use hashbrown::HashMap;
+use private::Range;
 
 #[derive(Debug)]
 pub enum Error {
@@ -45,20 +46,44 @@ pub struct SliceCache<K: Hash + PartialEq + Eq + core::fmt::Debug> {
     full: bool,
 }
 
-#[derive(Debug, PartialEq, Eq, PartialOrd, Ord, Clone)]
-pub struct Range {
-    begin: usize,
-    end: usize,
-}
+mod private {
+    #[derive(Debug, PartialEq, Eq, PartialOrd, Ord, Clone)]
+    pub(crate) struct Range {
+        begin: usize,
+        end: usize, // must be >= begin
+    }
 
-impl Range {
-    fn overlaps(&self, other: &Range) -> bool {
-        self.begin < other.end && other.begin < self.end
+    impl Range {
+        pub fn from_begin_end(begin: usize, end: usize) -> Option<Self> {
+            if end > begin {
+                Some(Self { begin, end })
+            } else {
+                None
+            }
+        }
 
-        // begin   end      b     e    OK                x
-        // begin    b      end    e    KO   true         x  x
-        // b       begin    e     end  KO   true         x  x
-        // b        e     begin   end  OK                   x
+        pub fn from_begin_len(begin: usize, len: usize) -> Self {
+            Self {
+                begin,
+                end: begin + len,
+            }
+        }
+
+        pub fn begin(&self) -> usize {
+            self.begin
+        }
+        pub fn end(&self) -> usize {
+            self.end
+        }
+
+        pub fn overlaps(&self, other: &Range) -> bool {
+            self.begin < other.end && other.begin < self.end
+
+            // begin   end      b     e    OK                x
+            // begin    b      end    e    KO   true         x  x
+            // b       begin    e     end  KO   true         x  x
+            // b        e     begin   end  OK                   x
+        }
     }
 }
 
@@ -89,10 +114,9 @@ impl<K: Hash + PartialEq + Eq + core::fmt::Debug> SliceCache<K> {
             // the element would not fit in the buffer, start again from the beginning,
             // but first remove any element in the buffer tail, otherwise inserted_range will not
             // overlap with the latest elements
-            removed += self.remove_range(&Range {
-                begin: self.free_pointer,
-                end: self.buffer.len(),
-            });
+            let range = Range::from_begin_end(self.free_pointer, self.buffer.len())
+                .expect("the buffer is longer than free_pointer as ensured by the if clause");
+            removed += self.remove_range(&range);
             self.free_pointer = 0;
             self.full = true;
         }
@@ -101,7 +125,7 @@ impl<K: Hash + PartialEq + Eq + core::fmt::Debug> SliceCache<K> {
         self.buffer[begin..end].copy_from_slice(value);
         self.free_pointer = end;
 
-        let inserted_range = Range { begin, end };
+        let inserted_range = Range::from_begin_len(begin, value.len());
         let key = Arc::new(key);
         self.indexes.insert(key.clone(), inserted_range.clone());
         self.insertions.push_front(key);
@@ -117,7 +141,7 @@ impl<K: Hash + PartialEq + Eq + core::fmt::Debug> SliceCache<K> {
     pub fn get(&self, key: &K) -> Option<&[u8]> {
         let index = self.indexes.get(key)?;
 
-        Some(&self.buffer[index.begin..index.end])
+        Some(&self.buffer[index.begin()..index.end()])
     }
 
     /// Return wether the cache contains the given key
@@ -129,7 +153,7 @@ impl<K: Hash + PartialEq + Eq + core::fmt::Debug> SliceCache<K> {
     /// Get the value at key `K` if exist in the cache, `None` otherwise
     pub fn get_value<'a, V: redb::RedbValue>(&'a self, key: &K) -> Option<V::SelfType<'a>> {
         let index = self.indexes.get(key)?;
-        let value = V::from_bytes(&self.buffer[index.begin..index.end]);
+        let value = V::from_bytes(&self.buffer[index.begin()..index.end()]);
 
         Some(value)
     }
