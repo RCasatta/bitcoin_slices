@@ -13,6 +13,8 @@ jobs:
       - uses: dtolnay/rust-toolchain@master
         with:
           toolchain: ${{ matrix.toolchain }}
+      - run: cargo update -p cc --precise 1.0.28
+
       - run: cargo build --features bitcoin,sha2
         if: ${{ matrix.toolchain == '1.60.0' }}
       - run: cargo build --features slice_cache

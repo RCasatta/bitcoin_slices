@@ -153,7 +153,7 @@ mod test {
         let mut visitor = crate::bsl::FindTransaction::new(txid.clone());
         let _ = Block::visit(&mainnet_702861(), &mut visitor);
         let tx = visitor.tx_found().unwrap();
-        assert_eq!(tx.txid(), txid);
+        assert_eq!(tx.compute_txid(), txid);
     }
 
     #[cfg(target_pointer_width = "64")]
@@ -295,7 +295,7 @@ mod bench {
             let mut tx_hashes = Vec::with_capacity(block.txdata.len());
 
             for tx in block.txdata.iter() {
-                tx_hashes.push(tx.txid())
+                tx_hashes.push(tx.compute_txid())
             }
             assert_eq!(tx_hashes.len(), 2500);
             black_box((&block, tx_hashes));
@@ -315,7 +315,7 @@ mod bench {
             let mut visitor = crate::bsl::FindTransaction::new(txid.clone());
             let _ = Block::visit(&mainnet_702861(), &mut visitor);
             let tx = visitor.tx_found().unwrap();
-            assert_eq!(tx.txid(), txid);
+            assert_eq!(tx.compute_txid(), txid);
             core::hint::black_box(tx);
         });
     }
@@ -332,7 +332,7 @@ mod bench {
             let block: bitcoin::Block = deserialize(mainnet_702861()).unwrap();
             let mut tx = None;
             for current in block.txdata {
-                if current.txid() == txid {
+                if current.compute_txid() == txid {
                     tx = Some(current);
                     break;
                 }

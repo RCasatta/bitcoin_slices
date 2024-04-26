@@ -350,7 +350,7 @@ mod bench {
     pub fn txid_bitcoin(bh: &mut Bencher) {
         let tx: bitcoin::Transaction = deserialize(&BENCH_TX[..]).unwrap();
         bh.iter(|| {
-            black_box(&tx.txid());
+            black_box(&tx.compute_txid());
         });
     }
 }
