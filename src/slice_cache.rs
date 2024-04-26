@@ -244,7 +244,7 @@ mod tests {
         let txs: HashMap<_, _> = block
             .txdata
             .into_iter()
-            .map(|tx| (tx.txid(), bitcoin::consensus::serialize(&tx)))
+            .map(|tx| (tx.compute_txid(), bitcoin::consensus::serialize(&tx)))
             .collect();
 
         let cache_size = 600_000;
