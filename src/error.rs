@@ -22,7 +22,7 @@ pub enum Error {
     /// minimal encoding is `0x01`
     NonMinimalVarInt,
 
-    /// The implemented visitor decided to break by returning `true` from [`crate::visit::Visitor::visit_transaction`]
+    /// The implemented visitor decided to break by returning `ControlFlow::Break<()>` from [`crate::visit::Visitor::visit_transaction`]
     /// for example because it found what it was searching for
     VisitBreak,
 }
