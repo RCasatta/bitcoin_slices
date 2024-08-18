@@ -53,7 +53,7 @@ impl<'a, T: Visit<'a>> Parse<'a> for T {
 ///
 /// Not every function is called, for example `visit_block_header` is obviously not called when
 /// parsing a transasction.
-/// Traits with single function would have been more precies, however, it would have required the
+/// Traits with single function would have been more precise, however, it would have required the
 /// user to implement those trait with an empty block which was considered too verbose. Morever it
 /// looks a single trait with many functions is more perfomant.
 #[allow(unused)]
