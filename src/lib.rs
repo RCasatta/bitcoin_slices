@@ -5,9 +5,6 @@
 #![warn(missing_docs)]
 #![doc = include_str!("../README.md")]
 
-#[cfg(bench)]
-extern crate test;
-
 pub mod bsl;
 mod error;
 pub mod number;
@@ -45,7 +42,7 @@ pub use redb;
 #[cfg(feature = "bitcoin")]
 pub use bitcoin;
 
-#[cfg(any(test, bench))]
+#[cfg(test)]
 pub mod test_common {
     use hex_lit::hex;
 

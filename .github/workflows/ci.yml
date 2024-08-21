@@ -50,5 +50,5 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
-      - uses: dtolnay/rust-toolchain@nightly
-      - run: RUSTFLAGS='--cfg=bench' cargo +nightly bench --all-features
+      - uses: dtolnay/rust-toolchain@stable
+      - run: cargo bench --all-features

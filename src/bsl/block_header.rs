@@ -164,36 +164,3 @@ mod test {
         assert_eq!(&block.block_hash_sha2()[..], &reverse(expected)[..]);
     }
 }
-
-#[cfg(bench)]
-mod bench {
-
-    #[cfg(feature = "bitcoin_hashes")]
-    #[bench]
-    pub fn block_hash(bh: &mut test::Bencher) {
-        use crate::bsl::BlockHeader;
-        use crate::Parse;
-        let block_header = BlockHeader::parse(&crate::test_common::GENESIS_BLOCK_HEADER)
-            .unwrap()
-            .parsed_owned();
-
-        bh.iter(|| {
-            let hash = block_header.block_hash();
-            test::black_box(&hash);
-        });
-    }
-
-    #[cfg(feature = "bitcoin")]
-    #[bench]
-    pub fn block_hash_bitcoin(bh: &mut test::Bencher) {
-        use bitcoin::consensus::deserialize;
-
-        let block_header: bitcoin::blockdata::block::Header =
-            deserialize(&crate::test_common::GENESIS_BLOCK_HEADER).unwrap();
-
-        bh.iter(|| {
-            let hash = block_header.block_hash();
-            test::black_box(&hash);
-        });
-    }
-}

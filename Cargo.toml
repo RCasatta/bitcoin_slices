@@ -31,7 +31,13 @@ hex_lit = { version = "0.1", features = ["rust_v_1_46"] }
 bitcoin = { version = "0.32.0", features = ["rand"] }
 bitcoin-test-data = "0.2.0"
 tempfile = "3.4.0"
+criterion = "0.3"
 
 [package.metadata.docs.rs]
 all-features = true
 rustdoc-args = ["--cfg", "docsrs"]
+
+[[bench]]
+name = "benches"
+harness = false
+required-features = ["bitcoin_hashes", "bitcoin", "sha2"]
