@@ -17,6 +17,7 @@ sha2 = { version = "0.10", optional = true }
 bitcoin = { version = "0.32.0", optional = true }
 redb = { version = "1.0", optional = true }
 hashbrown = { version = "0.14", optional = true }
+prometheus = { version = "0.13.4", optional = true }
 
 [features]
 default = []
@@ -25,6 +26,7 @@ sha2 = ["dep:sha2"]
 redb = ["dep:redb"]
 bitcoin = ["dep:bitcoin", "bitcoin_hashes"]
 slice_cache = ["dep:hashbrown"]
+prometheus = ["dep:prometheus", "slice_cache"]
 
 [dev-dependencies]
 hex_lit = { version = "0.1", features = ["rust_v_1_46"] }
