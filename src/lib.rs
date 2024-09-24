@@ -63,19 +63,3 @@ pub mod test_common {
         ret
     }
 }
-
-/// Common functions used in fuzzing
-#[cfg(fuzzing)]
-pub mod fuzzing {
-    use crate::{Error, ParseResult};
-
-    /// Some checks on a succesfull parse
-    pub fn check<T: AsRef<[u8]>>(data: &[u8], p: Result<ParseResult<T>, Error>) {
-        if let Ok(p) = p {
-            let consumed = p.consumed();
-            assert_eq!(p.parsed().as_ref().len(), consumed);
-            assert_eq!(&data[..consumed], p.parsed().as_ref());
-            assert_eq!(&data[consumed..], p.remaining());
-        }
-    }
-}
