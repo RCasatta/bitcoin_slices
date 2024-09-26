@@ -188,6 +188,11 @@ impl<K: Hash + PartialEq + Eq + core::fmt::Debug> SliceCache<K> {
         self.indexes.len()
     }
 
+    /// Return the average size of the elements contained in the cache
+    pub fn avg(&self) -> f64 {
+        self.buffer.len() as f64 / self.indexes.len() as f64
+    }
+
     /// Return wether the cache filled the inner buffer of serialized object and removed at least
     /// one older element, following inserted elements will likely remove older entries.
     pub fn full(&self) -> bool {
