@@ -171,7 +171,7 @@ impl<K: Hash + PartialEq + Eq + core::fmt::Debug> SliceCache<K> {
 
     /// Return wether the cache contains the given key
     pub fn contains(&self, key: &K) -> bool {
-        self.indexes.get(key).is_some()
+        self.get(key).is_some()
     }
 
     #[cfg(feature = "redb")]
