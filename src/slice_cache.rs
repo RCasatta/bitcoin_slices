@@ -126,9 +126,11 @@ impl<K: Hash + PartialEq + Eq + core::fmt::Debug> SliceCache<K> {
             // the element would not fit in the buffer, start again from the beginning,
             // but first remove any element in the buffer tail, otherwise inserted_range will not
             // overlap with the latest elements
-            let range = Range::from_begin_end(self.free_pointer, self.buffer.len())
-                .expect("the buffer is longer than free_pointer as ensured by the if clause");
-            removed += self.remove_range(&range);
+
+            if let Some(range) = Range::from_begin_end(self.free_pointer, self.buffer.len()) {
+                // we are removing only if the range is valid, it can happen `self.free_pointer == self.buffer.len()` and it that case we don't need to remove anything
+                removed += self.remove_range(&range);
+            }
             self.free_pointer = 0;
             self.full = true;
         }
@@ -369,5 +371,18 @@ mod tests {
         let val = cache.get_value::<Transaction>(&txid).unwrap();
 
         assert_eq!(val.as_ref(), segwit_tx);
+    }
+
+    #[test]
+    fn insert_when_buffer_exactly_full() {
+        let mut cache = SliceCache::new(10);
+
+        let k1 = 0;
+        let v1 = [0; 10usize];
+        cache.insert(k1, &v1).unwrap();
+
+        let k2 = 1;
+        let v2 = [0];
+        cache.insert(k2, &v2).unwrap();
     }
 }
