@@ -164,7 +164,17 @@ pub fn hash_block_txs(c: &mut Criterion) {
             b.iter(|| {
                 let block: bitcoin::Block = deserialize(mainnet_702861()).unwrap();
                 let mut tx_hashes = Vec::with_capacity(block.txdata.len());
-
+                for tx in block.txdata.iter() {
+                    tx_hashes.push(tx.compute_txid())
+                }
+                assert_eq!(tx_hashes.len(), 2500);
+                black_box((&block, tx_hashes));
+            })
+        })
+        .bench_function("bitcoin_block_ready", |b| {
+            let block: bitcoin::Block = deserialize(mainnet_702861()).unwrap();
+            b.iter(|| {
+                let mut tx_hashes = Vec::with_capacity(block.txdata.len());
                 for tx in block.txdata.iter() {
                     tx_hashes.push(tx.compute_txid())
                 }
