@@ -25,6 +25,9 @@ pub enum Error {
     /// The implemented visitor decided to break by returning `true` from [`crate::visit::Visitor::visit_transaction`]
     /// for example because it found what it was searching for
     VisitBreak,
+
+    /// Other error with an error code to be usable by downstream crates
+    Other(u32),
 }
 
 #[cfg(test)]
