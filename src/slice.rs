@@ -1,6 +1,7 @@
 use crate::{Error, ParseResult, SResult};
 
 /// Return a slice legnth `len` from `from` if it's long enough, error otherwise.
+#[inline(always)]
 pub fn read_slice(from: &[u8], len: usize) -> SResult<&[u8]> {
     if from.len() < len {
         let needed = len - from.len();
