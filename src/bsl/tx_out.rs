@@ -32,6 +32,12 @@ impl<'a> TxOut<'a> {
     pub fn script_pubkey(&self) -> &[u8] {
         self.script_pubkey.script()
     }
+
+    #[cfg(feature = "bitcoin")]
+    /// Return the script pubkey of this output as a bitcoin::Script
+    pub fn as_bitcoin_script(&self) -> &bitcoin::Script {
+        &bitcoin::Script::from_bytes(self.script_pubkey())
+    }
 }
 
 impl<'a> AsRef<[u8]> for TxOut<'a> {
