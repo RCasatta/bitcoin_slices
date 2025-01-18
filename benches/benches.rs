@@ -1,5 +1,6 @@
 use bitcoin::consensus::deserialize;
 use bitcoin_hashes::sha256d;
+use bitcoin_slices::bsl::{parse_len, scan_len};
 use bitcoin_slices::bsl::{Block, BlockHeader, FindTransaction, Transaction, TxOut};
 use bitcoin_slices::{Parse, Visit, Visitor};
 use bitcoin_test_data::blocks::mainnet_702861;
@@ -19,7 +20,8 @@ criterion_group!(
     block_sum_outputs,
     hash_block_txs,
     find_tx,
-    block_hash
+    block_hash,
+    len
 );
 criterion_main!(benches);
 
@@ -234,6 +236,51 @@ pub fn block_hash(c: &mut Criterion) {
             b.iter(|| {
                 let hash = block_header.block_hash();
                 black_box(&hash);
+            })
+        });
+}
+
+pub fn len(c: &mut Criterion) {
+    let slices = [
+        &[0x01u8][..],                                               // small value
+        &[0xFC][..],                                                 // max small value
+        &[0xFD, 0xFD, 0x00][..],                                     // minimal FD encoding
+        &[0xFD, 0xFF, 0xFF][..],                                     // max FD value
+        &[0xFE, 0x00, 0x00, 0x01, 0x00][..],                         // minimal FE encoding
+        &[0xFE, 0xFF, 0xFF, 0xFF, 0xFF][..],                         // max FE value
+        &[0xFF, 0x00, 0x00, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00][..], // minimal FF encoding
+        &[0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF][..], // max FF value
+    ];
+    c.benchmark_group("len")
+        .bench_function("scan_len", |b| {
+            b.iter(|| {
+                let mut sum = 0u128;
+                let mut value_ok = 0u64;
+                let mut consumed = 0;
+                for slice in slices {
+                    let len = scan_len(&slice[..], &mut consumed).unwrap();
+                    sum += len as u128;
+                    value_ok += 1;
+                    black_box(&len);
+                }
+                assert_eq!(sum, 18446744082299617783); // All values summed
+                assert_eq!(value_ok, 8);
+            })
+        })
+        .bench_function("parse_len", |b| {
+            b.iter(|| {
+                let mut sum = 0u128;
+                let mut value_ok = 0u64;
+                for slice in slices {
+                    let len = parse_len(&slice[..]).unwrap();
+
+                    sum += len.n() as u128;
+                    value_ok += 1;
+                    black_box(&len.n());
+                    black_box(&len.consumed());
+                }
+                assert_eq!(sum, 18446744082299617783); // All values summed
+                assert_eq!(value_ok, 8);
             })
         });
 }
