@@ -1,5 +1,5 @@
 use crate::bsl::Script;
-use crate::number::U64;
+use crate::number::read_u64;
 use crate::{Parse, ParseResult, SResult};
 
 /// Contains a single transaction output
@@ -11,13 +11,13 @@ pub struct TxOut<'a> {
 }
 impl<'a> Parse<'a> for TxOut<'a> {
     fn parse(slice: &'a [u8]) -> SResult<Self> {
-        let value = U64::parse(slice)?;
-        let script = Script::parse(value.remaining())?;
-        let consumed = value.consumed() + script.consumed();
+        let value = read_u64(slice)?;
+        let script = Script::parse(&slice[8..])?;
+        let consumed = 8 + script.consumed();
         let remaining = script.remaining();
         let tx_out = TxOut {
             slice: &slice[..consumed],
-            value: value.parsed_owned().into(),
+            value,
             script_pubkey: script.parsed_owned(),
         };
         Ok(ParseResult::new(remaining, tx_out))

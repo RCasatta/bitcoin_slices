@@ -1,6 +1,6 @@
 use crate::{
     bsl::{OutPoint, Script},
-    number::U32,
+    number::read_u32,
     Parse, ParseResult, SResult,
 };
 
@@ -17,15 +17,15 @@ impl<'a> Parse<'a> for TxIn<'a> {
     fn parse(slice: &'a [u8]) -> SResult<Self> {
         let out_point = OutPoint::parse(slice)?;
         let script = Script::parse(out_point.remaining())?;
-        let sequence = U32::parse(script.remaining())?;
+        let sequence = read_u32(script.remaining())?;
         let consumed = script.consumed() + 40;
         let tx_in = TxIn {
             slice: &slice[..consumed],
             prevout: out_point.parsed_owned(),
             script_sig: script.parsed_owned(),
-            sequence: sequence.parsed().into(),
+            sequence,
         };
-        Ok(ParseResult::new(sequence.remaining(), tx_in))
+        Ok(ParseResult::new(&slice[consumed..], tx_in))
     }
 }
 impl<'a> TxIn<'a> {
