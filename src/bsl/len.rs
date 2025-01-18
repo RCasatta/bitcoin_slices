@@ -28,6 +28,49 @@ pub fn parse_len(slice: &[u8]) -> Result<Len, Error> {
     })
 }
 
+#[inline(always)]
+pub fn scan_len(slice: &[u8], consumed: &mut usize) -> Result<u64, Error> {
+    match slice.first() {
+        Some(0xFFu8) => {
+            let bytes: [u8; 8] = slice[1..].try_into().map_err(|_| Error::MoreBytesNeeded)?;
+            let n = u64::from_le_bytes(bytes);
+            if n > u32::MAX as u64 {
+                *consumed += 9;
+                Ok(n)
+            } else {
+                Err(Error::NonMinimalVarInt)
+            }
+        }
+        Some(0xFEu8) => {
+            let bytes: [u8; 4] = slice[1..].try_into().map_err(|_| Error::MoreBytesNeeded)?;
+            let n = u32::from_le_bytes(bytes) as u64;
+            if n > u16::MAX as u64 {
+                *consumed += 5;
+                Ok(n)
+            } else {
+                Err(Error::NonMinimalVarInt)
+            }
+        }
+
+        Some(0xFDu8) => {
+            let bytes: [u8; 2] = slice[1..].try_into().map_err(|_| Error::MoreBytesNeeded)?;
+            let n = u16::from_le_bytes(bytes) as u64;
+            if n >= 0xFD {
+                *consumed += 3;
+                Ok(n)
+            } else {
+                Err(Error::NonMinimalVarInt)
+            }
+        }
+        Some(x) => {
+            *consumed += 1;
+            Ok(*x as u64)
+        }
+
+        None => Err(Error::MoreBytesNeeded),
+    }
+}
+
 impl Len {
     /// The value encoded in this compact int
     pub fn n(&self) -> u64 {
