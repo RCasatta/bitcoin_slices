@@ -2,8 +2,8 @@ use core::{num::NonZeroU32, ops::ControlFlow};
 
 use crate::{
     bsl::{TxIns, TxOuts, Witnesses},
-    number::{I32, U32, U8},
-    Error, Parse, ParseResult, SResult, Visit, Visitor,
+    number::{read_i32, read_u32, read_u8},
+    Error, ParseResult, SResult, Visit, Visitor,
 };
 
 /// A Bitcoin transaction
@@ -18,13 +18,12 @@ pub struct Transaction<'a> {
 
 impl<'a> Visit<'a> for Transaction<'a> {
     fn visit<'b, V: Visitor>(slice: &'a [u8], visit: &'b mut V) -> SResult<'a, Self> {
-        let version = I32::parse(slice)?;
-        let inputs = TxIns::visit(version.remaining(), visit)?;
+        let _version = read_i32(slice)?;
+        let inputs = TxIns::visit(&slice[4..], visit)?;
         if inputs.parsed().is_empty() {
-            let segwit_flag = U8::parse(inputs.remaining())?;
-            let segwit_flag_u8 = segwit_flag.parsed().into();
-            if segwit_flag_u8 == 1 {
-                let inputs = TxIns::visit(segwit_flag.remaining(), visit)?;
+            let segwit_flag = read_u8(inputs.remaining())?;
+            if segwit_flag == 1 {
+                let inputs = TxIns::visit(&inputs.remaining()[1..], visit)?;
                 let outputs = TxOuts::visit(inputs.remaining(), visit)?;
                 let witnesses = Witnesses::visit(outputs.remaining(), inputs.parsed().n(), visit)?;
 
@@ -32,7 +31,7 @@ impl<'a> Visit<'a> for Transaction<'a> {
                     return Err(Error::SegwitFlagWithoutWitnesses);
                 }
 
-                let _locktime = U32::parse(witnesses.remaining())?;
+                let _locktime = read_u32(witnesses.remaining())?;
                 let consumed = 10 + inputs.consumed() + outputs.consumed() + witnesses.consumed();
                 let inputs_outputs_len =
                     inputs.parsed().as_ref().len() + outputs.parsed().as_ref().len();
@@ -46,11 +45,11 @@ impl<'a> Visit<'a> for Transaction<'a> {
                     ControlFlow::Break(_) => Err(Error::VisitBreak),
                 }
             } else {
-                Err(Error::UnknownSegwitFlag(segwit_flag_u8))
+                Err(Error::UnknownSegwitFlag(segwit_flag))
             }
         } else {
             let outputs = TxOuts::visit(inputs.remaining(), visit)?;
-            let _locktime = U32::parse(outputs.remaining())?;
+            let _locktime = read_u32(outputs.remaining())?;
             let consumed = inputs.consumed() + outputs.consumed() + 8;
 
             let tx = Transaction {
@@ -67,19 +66,13 @@ impl<'a> Visit<'a> for Transaction<'a> {
 impl<'a> Transaction<'a> {
     /// Returns the transaction version.
     pub fn version(&self) -> i32 {
-        I32::parse(&self.slice[..4])
-            .expect("slice length granted during parsing")
-            .parsed_owned()
-            .into()
+        read_i32(&self.slice[..4]).expect("slice length granted during parsing")
     }
 
     /// Returns the transaction locktime.
     pub fn locktime(&self) -> u32 {
         let from = self.slice.len() - 4; // slice length granted during parsing
-        U32::parse(&self.slice[from..])
-            .expect("slice length granted during parsing")
-            .parsed_owned()
-            .into()
+        read_u32(&self.slice[from..]).expect("slice length granted during parsing")
     }
 
     /// Return the txid preimage, or the data that must be fed to the hashing function (double sha256)
@@ -169,6 +162,7 @@ impl<'o> redb::RedbValue for Transaction<'o> {
     where
         Self: 'a,
     {
+        use crate::visit::Parse;
         // TODO this is inefficient, should bsl objects contains only a slice so that this is easy?
         // (but getting other stuff may be expensive?)
         // a middle ground could be caching values, and computing them only if needed, for example
