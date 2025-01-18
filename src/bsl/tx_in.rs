@@ -82,9 +82,9 @@ mod test {
 
         assert_eq!(
             TxIn::parse(&tx_in_bytes[..tx_in_bytes.len() - 1]),
-            Err(Error::Needed(1))
+            Err(Error::MoreBytesNeeded)
         );
 
-        assert_eq!(TxIn::parse(&tx_in_bytes[..20]), Err(Error::Needed(16)));
+        assert_eq!(TxIn::parse(&tx_in_bytes[..20]), Err(Error::MoreBytesNeeded));
     }
 }

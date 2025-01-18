@@ -61,7 +61,7 @@ mod test {
         check(&[1u8, 11], &[11u8]);
         check(&[3u8, 0, 1, 2], &[0u8, 1, 2]);
 
-        assert_eq!(Script::parse(&[1u8]), Err(Error::Needed(1)));
-        assert_eq!(Script::parse(&[100u8]), Err(Error::Needed(100)));
+        assert_eq!(Script::parse(&[1u8]), Err(Error::MoreBytesNeeded));
+        assert_eq!(Script::parse(&[100u8]), Err(Error::MoreBytesNeeded));
     }
 }

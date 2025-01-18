@@ -24,7 +24,7 @@ pub fn parse_len(slice: &[u8]) -> Result<Len, Error> {
             n: *x as u64,
             consumed: 1,
         },
-        None => return Err(Error::Needed(1)),
+        None => return Err(Error::MoreBytesNeeded),
     })
 }
 
@@ -58,7 +58,7 @@ mod test {
 
     #[test]
     fn test_parse_len() {
-        assert_eq!(parse_len(&[]), Err(Error::Needed(1)));
+        assert_eq!(parse_len(&[]), Err(Error::MoreBytesNeeded));
 
         check(&[10u8], 1, 10);
         check(&[0xFCu8], 1, 0xFC);
@@ -70,9 +70,9 @@ mod test {
         check(&[0xFDu8, 0xFF, 0xF], 3, 0xFFF);
         check(&[10u8, 0u8], 1, 10);
 
-        assert_eq!(parse_len(&[0xFDu8]), Err(Error::Needed(2)));
-        assert_eq!(parse_len(&[0xFDu8, 0xFD]), Err(Error::Needed(1)));
-        assert_eq!(parse_len(&[0xFEu8]), Err(Error::Needed(4)));
+        assert_eq!(parse_len(&[0xFDu8]), Err(Error::MoreBytesNeeded));
+        assert_eq!(parse_len(&[0xFDu8, 0xFD]), Err(Error::MoreBytesNeeded));
+        assert_eq!(parse_len(&[0xFEu8]), Err(Error::MoreBytesNeeded));
         check(&[0xFEu8, 0xF, 0xF, 0xF, 0xF], 5, 0xF0F0F0F);
         check(
             &[0xFFu8, 0xE0, 0xF0, 0xF0, 0xF0, 0xF0, 0xF0, 0, 0],
@@ -80,7 +80,7 @@ mod test {
             0xF0F0F0F0F0E0,
         );
 
-        assert_eq!(parse_len(&[0xFFu8]), Err(Error::Needed(8)));
+        assert_eq!(parse_len(&[0xFFu8]), Err(Error::MoreBytesNeeded));
     }
 
     #[cfg(target_pointer_width = "64")]

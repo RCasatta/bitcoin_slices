@@ -171,7 +171,7 @@ mod test {
 
         assert_eq!(
             TxOuts::parse(&tx_outs[..tx_outs.len() - 1]),
-            Err(Error::Needed(1))
+            Err(Error::MoreBytesNeeded)
         );
     }
 

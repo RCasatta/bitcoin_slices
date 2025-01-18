@@ -108,8 +108,8 @@ mod test {
     #[test]
     fn parse_out_point() {
         let expected = OutPoint { slice: &[0u8; 36] };
-        assert_eq!(OutPoint::parse(&[1u8]), Err(Error::Needed(35)));
-        assert_eq!(OutPoint::parse(&[0u8; 35]), Err(Error::Needed(1)));
+        assert_eq!(OutPoint::parse(&[1u8]), Err(Error::MoreBytesNeeded));
+        assert_eq!(OutPoint::parse(&[0u8; 35]), Err(Error::MoreBytesNeeded));
         assert_eq!(
             OutPoint::parse(&[0u8; 36]),
             Ok(ParseResult::new_exact(expected.clone()))

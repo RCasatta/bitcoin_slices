@@ -92,7 +92,7 @@ mod test {
 
         assert_eq!(
             TxIns::parse(&tx_ins[..tx_ins.len() - 1]),
-            Err(Error::Needed(1))
+            Err(Error::MoreBytesNeeded)
         );
     }
 

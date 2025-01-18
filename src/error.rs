@@ -2,15 +2,7 @@
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum Error {
     /// This bytes are needed to complete the parsing of the current element.
-    ///
-    /// Note it could be lower than needed to parse the whole object. For example if you pass a 20
-    /// bytes slice to `OutPoint::parse(&slice[..20])` you will get `Error::Needed(12)` because the first
-    /// element parsed is the hash of 32 bytes, but to complete the object you would need another
-    /// 4 bytes of the `vout`.
-    ///
-    /// Note also it's an u32 instead of an usize to save space on 64 bits system and
-    /// significantly improve performance.
-    Needed(u32),
+    MoreBytesNeeded,
 
     /// Returned if the segwit parsed tx contains a segwit flag which is not 1
     UnknownSegwitFlag(u8),
