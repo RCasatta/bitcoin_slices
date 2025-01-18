@@ -82,6 +82,12 @@ pub fn block_deserialize(c: &mut Criterion) {
                 let block: bitcoin::Block = deserialize(mainnet_702861()).unwrap();
                 black_box(&block);
             })
+        })
+        .bench_function("slices_header", |b| {
+            b.iter(|| {
+                let block_header = BlockHeader::parse(&GENESIS_BLOCK_HEADER).unwrap();
+                black_box(&block_header);
+            })
         });
 }
 
