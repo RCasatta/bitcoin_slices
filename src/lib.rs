@@ -23,7 +23,10 @@ pub use slice_cache::SliceCache;
 
 pub use error::Error;
 pub use parse_result::ParseResult;
+
+#[allow(deprecated)]
 pub use slice::read_slice;
+
 pub use visit::{EmptyVisitor, Parse, Visit, Visitor};
 
 /// Common result type throughout the lib

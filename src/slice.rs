@@ -2,6 +2,7 @@ use crate::{Error, ParseResult, SResult};
 
 /// Return a slice legnth `len` from `from` if it's long enough, error otherwise.
 #[inline(always)]
+#[deprecated]
 pub fn read_slice(from: &[u8], len: usize) -> SResult<&[u8]> {
     if from.len() < len {
         Err(Error::MoreBytesNeeded)
@@ -16,8 +17,10 @@ pub fn read_slice(from: &[u8], len: usize) -> SResult<&[u8]> {
 mod test {
     use crate::{Error, ParseResult};
 
+    #[allow(deprecated)]
     use super::read_slice as r;
 
+    #[allow(deprecated)]
     #[test]
     fn read_slice() {
         assert_eq!(r(&[], 0), Ok(ParseResult::new(&[][..], &[][..])));

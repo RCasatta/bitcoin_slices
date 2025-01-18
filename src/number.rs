@@ -2,10 +2,11 @@
 
 use core::convert::TryInto;
 
-use crate::{bsl::Len, slice::read_slice, visit::Parse, Error, ParseResult, SResult, Visit};
+use crate::{bsl::Len, visit::Parse, Error, ParseResult, SResult, Visit};
 
 /// Converts into and from u8 and implements [`Visit`] and `AsRef<[u8]>`.
 #[derive(Debug, PartialEq, Eq)]
+#[allow(deprecated)]
 pub struct U8([u8; 1]);
 
 impl AsRef<[u8]> for U8 {
@@ -34,7 +35,8 @@ impl From<u8> for U8 {
 
 impl<'a> Parse<'a> for U8 {
     fn parse(slice: &'a [u8]) -> SResult<'a, Self> {
-        let p = read_slice(slice, 1)?;
+        #[allow(deprecated)]
+        let p = crate::slice::read_slice(slice, 1)?;
         Ok(ParseResult::new(p.remaining(), U8([p.parsed()[0]])))
     }
 }
@@ -50,7 +52,8 @@ macro_rules! impl_number {
                 slice: &'a [u8],
                 _visit: &'b mut V,
             ) -> SResult<'a, Self> {
-                let p = read_slice(slice, $size)?;
+                #[allow(deprecated)]
+                let p = crate::slice::read_slice(slice, $size)?;
                 let remaining = p.remaining();
                 let arr = p
                     .parsed_owned()
