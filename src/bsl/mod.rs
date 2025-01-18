@@ -26,6 +26,7 @@ mod witnesses;
 pub use block::Block;
 pub use block_header::BlockHeader;
 pub use len::parse_len;
+pub use len::scan_len;
 pub use len::Len;
 pub use out_point::OutPoint;
 pub use script::Script;

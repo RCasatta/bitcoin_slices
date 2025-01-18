@@ -29,6 +29,7 @@ pub fn parse_len(slice: &[u8]) -> Result<Len, Error> {
 }
 
 #[inline(always)]
+/// Same as `parse_len` but mutates the `consumed` variable and returns only the value.
 pub fn scan_len(slice: &[u8], consumed: &mut usize) -> Result<u64, Error> {
     match slice.first() {
         Some(0xFFu8) => {
@@ -90,6 +91,7 @@ impl Len {
 
 #[cfg(test)]
 mod test {
+    use super::scan_len;
     use crate::{
         bsl::{len::parse_len, Len},
         Error,
@@ -124,6 +126,113 @@ mod test {
         );
 
         assert_eq!(parse_len(&[0xFFu8]), Err(Error::MoreBytesNeeded));
+    }
+
+    #[test]
+    fn test_scan_len() {
+        let mut consumed = 0;
+        assert_eq!(scan_len(&[], &mut consumed), Err(Error::MoreBytesNeeded));
+
+        consumed = 0;
+        assert_eq!(scan_len(&[10u8], &mut consumed), Ok(10));
+        assert_eq!(consumed, 1);
+
+        consumed = 0;
+        assert_eq!(scan_len(&[0xFCu8], &mut consumed), Ok(0xFC));
+        assert_eq!(consumed, 1);
+
+        consumed = 0;
+        assert_eq!(
+            scan_len(&[0xFDu8, 0xFC, 0], &mut consumed),
+            Err(Error::NonMinimalVarInt)
+        );
+
+        consumed = 0;
+        assert_eq!(scan_len(&[0xFDu8, 0xFD, 0x00], &mut consumed), Ok(0xFD));
+        assert_eq!(consumed, 3);
+
+        consumed = 0;
+        assert_eq!(scan_len(&[0xFDu8, 0xFD, 0x33], &mut consumed), Ok(0x33FD));
+        assert_eq!(consumed, 3);
+
+        consumed = 0;
+        assert_eq!(scan_len(&[0xFDu8, 0xFF, 0xF], &mut consumed), Ok(0xFFF));
+        assert_eq!(consumed, 3);
+
+        consumed = 0;
+        assert_eq!(scan_len(&[10u8, 0u8], &mut consumed), Ok(10));
+        assert_eq!(consumed, 1);
+
+        consumed = 0;
+        assert_eq!(
+            scan_len(&[0xFDu8], &mut consumed),
+            Err(Error::MoreBytesNeeded)
+        );
+
+        consumed = 0;
+        assert_eq!(
+            scan_len(&[0xFDu8, 0xFD], &mut consumed),
+            Err(Error::MoreBytesNeeded)
+        );
+
+        consumed = 0;
+        assert_eq!(
+            scan_len(&[0xFEu8], &mut consumed),
+            Err(Error::MoreBytesNeeded)
+        );
+
+        consumed = 0;
+        assert_eq!(
+            scan_len(&[0xFEu8, 0xF, 0xF, 0xF, 0xF], &mut consumed),
+            Ok(0xF0F0F0F)
+        );
+        assert_eq!(consumed, 5);
+
+        consumed = 0;
+        assert_eq!(
+            scan_len(
+                &[0xFFu8, 0xE0, 0xF0, 0xF0, 0xF0, 0xF0, 0xF0, 0, 0],
+                &mut consumed
+            ),
+            Ok(0xF0F0F0F0F0E0)
+        );
+        assert_eq!(consumed, 9);
+    }
+
+    #[test]
+    fn test_len_slice() {
+        let slices = [
+            &[0x01u8][..],                                               // small value
+            &[0xFC][..],                                                 // max small value
+            &[0xFD, 0xFD, 0x00][..],                                     // minimal FD encoding
+            &[0xFD, 0xFF, 0xFF][..],                                     // max FD value
+            &[0xFE, 0x00, 0x00, 0x01, 0x00][..],                         // minimal FE encoding
+            &[0xFE, 0xFF, 0xFF, 0xFF, 0xFF][..],                         // max FE value
+            &[0xFF, 0x00, 0x00, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00][..], // minimal FF encoding
+            &[0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF][..], // max FF value
+        ];
+        let expected = [
+            1u64,
+            0xFC,
+            0xFD,
+            0xFFFF,
+            0x00010000,
+            0xFFFFFFFF,
+            0x0000000100000000,
+            0xFFFFFFFFFFFFFFFF,
+        ];
+        let expected_len = [1, 1, 3, 3, 5, 5, 9, 9];
+        for (i, (s, (e, l))) in slices
+            .iter()
+            .zip(expected.into_iter().zip(expected_len.into_iter()))
+            .enumerate()
+        {
+            let mut consumed = 0;
+            assert_eq!(scan_len(&s[..], &mut consumed), Ok(e), "fails {i}");
+            assert_eq!(consumed, l);
+
+            assert_eq!(parse_len(&s[..]), Ok(Len { consumed: l, n: e }));
+        }
     }
 
     #[cfg(target_pointer_width = "64")]
