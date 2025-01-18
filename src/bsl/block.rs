@@ -111,6 +111,8 @@ pub mod visitor {
 
 #[cfg(test)]
 mod test {
+    use bitcoin_test_data::blocks::mainnet_702861;
+
     use crate::{
         bsl::{Block, BlockHeader},
         test_common::GENESIS_BLOCK,
@@ -132,6 +134,20 @@ mod test {
             }
         );
         assert_eq!(block.consumed(), 285);
+
+        let block = Block::parse(&mainnet_702861()).unwrap();
+        assert_eq!(block.remaining(), &[][..]);
+        assert_eq!(
+            block.parsed(),
+            &Block {
+                slice: &mainnet_702861(),
+                header: BlockHeader::parse(&mainnet_702861())
+                    .unwrap()
+                    .parsed_owned(),
+                total_txs: 2500,
+            }
+        );
+        assert_eq!(block.consumed(), 1381836);
 
         // let mut iter = block.parsed.transactions();
         // let genesis_tx = iter.next().unwrap();
