@@ -15,6 +15,7 @@ pub struct Len {
 /// Parse `Len` from the slice.
 /// This is done without `Parse` trait to have better perfomance.
 #[inline(always)]
+#[deprecated = "use scan_len instead"]
 pub fn parse_len(slice: &[u8]) -> Result<Len, Error> {
     Ok(match slice.first() {
         Some(0xFFu8) => U64::parse(&slice[1..])?.parsed_owned().to_len()?,

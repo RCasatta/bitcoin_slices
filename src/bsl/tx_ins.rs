@@ -1,6 +1,6 @@
 use core::ops::ControlFlow;
 
-use super::len::{parse_len, Len};
+use super::len::scan_len;
 use crate::bsl::TxIn;
 use crate::{Parse, ParseResult, SResult, Visit, Visitor};
 
@@ -13,14 +13,11 @@ pub struct TxIns<'a> {
 
 impl<'a> Visit<'a> for TxIns<'a> {
     fn visit<'b, V: Visitor>(slice: &'a [u8], visit: &'b mut V) -> SResult<'a, Self> {
-        let Len { mut consumed, n } = parse_len(slice)?;
-        let mut remaining = &slice[consumed..];
-        let total_inputs = n as usize;
+        let mut consumed = 0;
+        let total_inputs = scan_len(slice, &mut consumed)? as usize;
         visit.visit_tx_ins(total_inputs);
-
         for i in 0..total_inputs {
-            let tx_in = TxIn::parse(remaining)?;
-            remaining = tx_in.remaining();
+            let tx_in = TxIn::parse(&slice[consumed..])?;
             consumed += tx_in.consumed();
             if let ControlFlow::Break(_) = visit.visit_tx_in(i, tx_in.parsed()) {
                 return Err(crate::Error::VisitBreak);

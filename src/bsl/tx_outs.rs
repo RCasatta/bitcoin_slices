@@ -1,6 +1,6 @@
 use core::ops::ControlFlow;
 
-use super::len::{parse_len, Len};
+use super::len::scan_len;
 use crate::bsl::TxOut;
 use crate::{Parse, ParseResult, SResult, Visit, Visitor};
 
@@ -13,14 +13,12 @@ pub struct TxOuts<'a> {
 
 impl<'a> Visit<'a> for TxOuts<'a> {
     fn visit<'b, V: Visitor>(slice: &'a [u8], visit: &'b mut V) -> SResult<'a, Self> {
-        let Len { mut consumed, n } = parse_len(slice)?;
-        let mut remaining = &slice[consumed..];
-        let total_outputs = n as usize;
+        let mut consumed = 0;
+        let total_outputs = scan_len(slice, &mut consumed)? as usize;
         visit.visit_tx_outs(total_outputs);
 
         for i in 0..total_outputs {
-            let tx_out = TxOut::parse(remaining)?;
-            remaining = tx_out.remaining();
+            let tx_out = TxOut::parse(&slice[consumed..])?;
             consumed += tx_out.consumed();
             if let ControlFlow::Break(_) = visit.visit_tx_out(i, tx_out.parsed()) {
                 return Err(crate::Error::VisitBreak);
@@ -50,10 +48,11 @@ impl<'a> TxOuts<'a> {
     /// be conveniet to iterate in case you already have validated the slice, for example some data
     /// in a db.
     pub fn iter(&self) -> TxOutIterator<'_> {
-        let len = parse_len(self.slice).expect("len granted by parsing");
+        let mut consumed = 0;
+        let len = scan_len(self.slice, &mut consumed).expect("len granted by parsing") as usize;
         TxOutIterator {
-            elements: len.n() as usize,
-            offset: len.consumed(),
+            elements: len,
+            offset: consumed,
             tx_outs: self,
         }
     }
@@ -127,9 +126,7 @@ impl<'o> redb::RedbValue for TxOuts<'o> {
     where
         Self: 'a,
     {
-        let n = parse_len(&data)
-            .expect("inserted data is not a valid TxOuts")
-            .n() as usize;
+        let n = scan_len(&data, &mut 0).expect("inserted data is not a valid TxOuts") as usize;
         TxOuts { slice: data, n }
     }
 

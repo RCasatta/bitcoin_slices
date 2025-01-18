@@ -1,4 +1,4 @@
-use super::len::{parse_len, Len};
+use super::len::scan_len;
 use crate::bsl::{BlockHeader, Transaction};
 use crate::{ParseResult, SResult, Visit, Visitor};
 
@@ -13,15 +13,13 @@ pub struct Block<'a> {
 impl<'a> Visit<'a> for Block<'a> {
     fn visit<'b, V: Visitor>(slice: &'a [u8], visit: &'b mut V) -> SResult<'a, Self> {
         let header = BlockHeader::visit(slice, visit)?;
-        let Len { mut consumed, n } = parse_len(header.remaining())?;
+        let mut consumed = 0;
+        let total_txs = scan_len(header.remaining(), &mut consumed)? as usize;
         consumed += 80;
-        let total_txs = n as usize;
-        let mut remaining = &slice[consumed..];
 
         visit.visit_block_begin(total_txs);
         for _ in 0..total_txs {
-            let tx = Transaction::visit(remaining, visit)?;
-            remaining = tx.remaining();
+            let tx = Transaction::visit(&slice[consumed..], visit)?;
             consumed += tx.consumed();
         }
 
