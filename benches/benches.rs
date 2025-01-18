@@ -309,24 +309,43 @@ pub fn script(c: &mut Criterion) {
     });
 }
 pub fn witness(c: &mut Criterion) {
-    let slices = [
-        &[0x00][..],                                     // empty witness
-        &[0x01, 0x01, 0x00][..],                         // one empty element
-        &[0x02, 0x01, 0x00, 0x01, 0x00][..],             // two empty elements
-        &[0x02, 0x01, 0x42, 0x01, 0x43][..],             // two single byte elements
-        &[0x02, 0x02, 0x42, 0x43, 0x02, 0x44, 0x45][..], // two two-byte elements
-        &[0x02][..],                                     // invalid - missing witness elements
-        &[0x01, 0x01][..],                               // invalid - missing witness data
-        &[0x02, 0x02, 0x42, 0x43, 0x02][..],             // invalid - incomplete second witness
-        &[0x02, 0x02, 0x42][..],                         // invalid - incomplete first witness
-        &[0xFF, 0xFF][..],                               // invalid - too many witness elements
-    ];
-    c.benchmark_group("witness").bench_function("parse", |b| {
-        b.iter(|| {
-            for slice in slices {
-                let witnesses = bsl::Witness::parse(&slice[..]);
-                black_box(&witnesses);
-            }
-        })
-    });
+    c.benchmark_group("witness")
+        .bench_function("parse_single_witness", |b| {
+            let slices = [
+                &[0x00][..],                                     // empty witness
+                &[0x01, 0x01, 0x00][..],                         // one empty element
+                &[0x02, 0x01, 0x00, 0x01, 0x00][..],             // two empty elements
+                &[0x02, 0x01, 0x42, 0x01, 0x43][..],             // two single byte elements
+                &[0x02, 0x02, 0x42, 0x43, 0x02, 0x44, 0x45][..], // two two-byte elements
+                &[0x02][..],                         // invalid - missing witness elements
+                &[0x01, 0x01][..],                   // invalid - missing witness data
+                &[0x02, 0x02, 0x42, 0x43, 0x02][..], // invalid - incomplete second witness
+                &[0x02, 0x02, 0x42][..],             // invalid - incomplete first witness
+                &[0xFF, 0xFF][..],                   // invalid - too many witness elements
+            ];
+            b.iter(|| {
+                for slice in slices {
+                    let witnesses = bsl::Witness::parse(&slice[..]);
+                    black_box(&witnesses);
+                }
+            })
+        });
+    c.benchmark_group("witness")
+        .bench_function("parse_multiple_witnesses", |b| {
+            let slices = [
+                &[0x01, 0x01, 0x00, 0x02, 0x01, 0x00, 0x01, 0x00][..], // first witness is [[0]], second witness is [[0][0]]
+                &[0x01, 0x00][..],                                     // empty witness
+                &[0x01, 0x01, 0x00][..],                               // one empty element
+                &[0x02, 0x01, 0x00, 0x01, 0x00][..],                   // two empty elements
+                &[0x02, 0x01, 0x42, 0x01, 0x43][..],                   // two single byte elements
+                &[0x02, 0x02, 0x42, 0x43, 0x02, 0x44, 0x45][..],       // two two-byte elements
+                &[0x03, 0x01, 0x42, 0x02, 0x43, 0x44, 0x03, 0x45, 0x46, 0x47][..], // three elements of increasing size
+            ];
+            b.iter(|| {
+                for slice in slices {
+                    let witnesses = bsl::Witnesses::parse(&slice[..], 1);
+                    black_box(&witnesses);
+                }
+            })
+        });
 }
