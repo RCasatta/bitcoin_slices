@@ -33,7 +33,11 @@ pub fn parse_len(slice: &[u8]) -> Result<Len, Error> {
 pub fn scan_len(slice: &[u8], consumed: &mut usize) -> Result<u64, Error> {
     match slice.first() {
         Some(0xFFu8) => {
-            let bytes: [u8; 8] = slice[1..].try_into().map_err(|_| Error::MoreBytesNeeded)?;
+            let bytes: [u8; 8] = slice
+                .get(1..9)
+                .ok_or(Error::MoreBytesNeeded)?
+                .try_into()
+                .expect("static bounds check");
             let n = u64::from_le_bytes(bytes);
             if n > u32::MAX as u64 {
                 *consumed += 9;
@@ -43,7 +47,11 @@ pub fn scan_len(slice: &[u8], consumed: &mut usize) -> Result<u64, Error> {
             }
         }
         Some(0xFEu8) => {
-            let bytes: [u8; 4] = slice[1..].try_into().map_err(|_| Error::MoreBytesNeeded)?;
+            let bytes: [u8; 4] = slice
+                .get(1..5)
+                .ok_or(Error::MoreBytesNeeded)?
+                .try_into()
+                .expect("static bounds check");
             let n = u32::from_le_bytes(bytes) as u64;
             if n > u16::MAX as u64 {
                 *consumed += 5;
@@ -52,9 +60,12 @@ pub fn scan_len(slice: &[u8], consumed: &mut usize) -> Result<u64, Error> {
                 Err(Error::NonMinimalVarInt)
             }
         }
-
         Some(0xFDu8) => {
-            let bytes: [u8; 2] = slice[1..].try_into().map_err(|_| Error::MoreBytesNeeded)?;
+            let bytes: [u8; 2] = slice
+                .get(1..3)
+                .ok_or(Error::MoreBytesNeeded)?
+                .try_into()
+                .expect("static bounds check");
             let n = u16::from_le_bytes(bytes) as u64;
             if n >= 0xFD {
                 *consumed += 3;
@@ -67,7 +78,6 @@ pub fn scan_len(slice: &[u8], consumed: &mut usize) -> Result<u64, Error> {
             *consumed += 1;
             Ok(*x as u64)
         }
-
         None => Err(Error::MoreBytesNeeded),
     }
 }
@@ -210,6 +220,8 @@ mod test {
             &[0xFE, 0xFF, 0xFF, 0xFF, 0xFF][..],                         // max FE value
             &[0xFF, 0x00, 0x00, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00][..], // minimal FF encoding
             &[0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF][..], // max FF value
+            &[0xFE, 0x01, 0x02, 0x03, 0x04][..],                         // random asymmetry
+            &[0xFE, 0x01, 0x02, 0x03, 0x04, 0x05][..], // slice longer than strictly needed
         ];
         let expected = [
             1u64,
@@ -220,8 +232,10 @@ mod test {
             0xFFFFFFFF,
             0x0000000100000000,
             0xFFFFFFFFFFFFFFFF,
+            0x04030201,
+            0x04030201,
         ];
-        let expected_len = [1, 1, 3, 3, 5, 5, 9, 9];
+        let expected_len = [1, 1, 3, 3, 5, 5, 9, 9, 5, 5];
         for (i, (s, (e, l))) in slices
             .iter()
             .zip(expected.into_iter().zip(expected_len.into_iter()))
