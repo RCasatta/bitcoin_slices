@@ -24,6 +24,7 @@ criterion_group!(
     block_hash,
     len,
     script,
+    witness,
 );
 criterion_main!(benches);
 
@@ -303,6 +304,28 @@ pub fn script(c: &mut Criterion) {
             for slice in slices {
                 let script = bsl::Script::parse(&slice[..]);
                 black_box(&script);
+            }
+        })
+    });
+}
+pub fn witness(c: &mut Criterion) {
+    let slices = [
+        &[0x00][..],                                     // empty witness
+        &[0x01, 0x01, 0x00][..],                         // one empty element
+        &[0x02, 0x01, 0x00, 0x01, 0x00][..],             // two empty elements
+        &[0x02, 0x01, 0x42, 0x01, 0x43][..],             // two single byte elements
+        &[0x02, 0x02, 0x42, 0x43, 0x02, 0x44, 0x45][..], // two two-byte elements
+        &[0x02][..],                                     // invalid - missing witness elements
+        &[0x01, 0x01][..],                               // invalid - missing witness data
+        &[0x02, 0x02, 0x42, 0x43, 0x02][..],             // invalid - incomplete second witness
+        &[0x02, 0x02, 0x42][..],                         // invalid - incomplete first witness
+        &[0xFF, 0xFF][..],                               // invalid - too many witness elements
+    ];
+    c.benchmark_group("witness").bench_function("parse", |b| {
+        b.iter(|| {
+            for slice in slices {
+                let witnesses = bsl::Witness::parse(&slice[..]);
+                black_box(&witnesses);
             }
         })
     });
