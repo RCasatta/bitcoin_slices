@@ -100,20 +100,19 @@ impl Len {
     }
 }
 
+#[allow(deprecated)]
 #[cfg(test)]
 mod test {
+    use super::parse_len;
     use super::scan_len;
-    use crate::{
-        bsl::{len::parse_len, Len},
-        Error,
-    };
-
-    fn check(slice: &[u8], consumed: usize, n: u64) {
-        assert_eq!(parse_len(slice), Ok(Len { consumed, n }));
-    }
+    use crate::{bsl::Len, Error};
 
     #[test]
     fn test_parse_len() {
+        fn check(slice: &[u8], consumed: usize, n: u64) {
+            assert_eq!(parse_len(slice), Ok(Len { consumed, n }));
+        }
+
         assert_eq!(parse_len(&[]), Err(Error::MoreBytesNeeded));
 
         check(&[10u8], 1, 10);

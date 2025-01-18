@@ -127,11 +127,13 @@ impl U16 {
 }
 
 #[inline(always)]
+/// Read a u8 from a slice
 pub fn read_u8(slice: &[u8]) -> Result<u8, Error> {
     slice.first().cloned().ok_or(Error::MoreBytesNeeded)
 }
 
 #[inline(always)]
+/// Read a u16 from a slice
 pub fn read_u16(slice: &[u8]) -> Result<u16, Error> {
     let arr: [u8; 2] = slice
         .get(..2)
@@ -142,6 +144,7 @@ pub fn read_u16(slice: &[u8]) -> Result<u16, Error> {
 }
 
 #[inline(always)]
+/// Read a u32 from a slice
 pub fn read_u32(slice: &[u8]) -> Result<u32, Error> {
     let arr: [u8; 4] = slice
         .get(..4)
@@ -152,6 +155,7 @@ pub fn read_u32(slice: &[u8]) -> Result<u32, Error> {
 }
 
 #[inline(always)]
+/// Read a i32 from a slice
 pub fn read_i32(slice: &[u8]) -> Result<i32, Error> {
     let arr: [u8; 4] = slice
         .get(..4)
@@ -162,6 +166,7 @@ pub fn read_i32(slice: &[u8]) -> Result<i32, Error> {
 }
 
 #[inline(always)]
+/// Read a u64 from a slice
 pub fn read_u64(slice: &[u8]) -> Result<u64, Error> {
     let arr: [u8; 8] = slice
         .get(..8)

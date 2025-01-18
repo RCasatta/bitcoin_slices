@@ -1,9 +1,8 @@
 use core::ops::ControlFlow;
 
 use crate::{
-    number::{I32, U32},
-    slice::read_slice,
-    Parse, ParseResult, SResult, Visit, Visitor,
+    number::{read_i32, read_u32},
+    Error, ParseResult, SResult, Visit, Visitor,
 };
 
 /// The block header.
@@ -18,22 +17,24 @@ pub struct BlockHeader<'a> {
 
 impl<'a> Visit<'a> for BlockHeader<'a> {
     fn visit<'b, V: Visitor>(slice: &'a [u8], visit: &'b mut V) -> SResult<'a, Self> {
-        let version = I32::parse(slice)?;
-        let hashes = read_slice(version.remaining(), 64)?;
-        let time = U32::parse(hashes.remaining())?;
-        let bits = U32::parse(time.remaining())?;
-        let nonce = U32::parse(bits.remaining())?;
+        if slice.len() < 80 {
+            return Err(Error::MoreBytesNeeded);
+        }
+        let version = read_i32(&slice[0..4]).expect("initial check 80");
+        let time = read_u32(&slice[68..72]).expect("initial check 80");
+        let bits = read_u32(&slice[72..76]).expect("initial check 80");
+        let nonce = read_u32(&slice[76..80]).expect("initial check 80");
         let header = BlockHeader {
             slice: &slice[..80],
-            version: version.parsed().into(),
-            time: time.parsed().into(),
-            bits: bits.parsed().into(),
-            nonce: nonce.parsed().into(),
+            version,
+            time,
+            bits,
+            nonce,
         };
         if let ControlFlow::Break(_) = visit.visit_block_header(&header) {
             return Err(crate::Error::VisitBreak);
         }
-        Ok(ParseResult::new(nonce.remaining(), header))
+        Ok(ParseResult::new(&slice[80..], header))
     }
 }
 
