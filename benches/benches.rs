@@ -1,5 +1,6 @@
 use bitcoin::consensus::deserialize;
 use bitcoin_hashes::sha256d;
+use bitcoin_slices::bsl;
 use bitcoin_slices::bsl::{parse_len, scan_len};
 use bitcoin_slices::bsl::{Block, BlockHeader, FindTransaction, Transaction, TxOut};
 use bitcoin_slices::{Parse, Visit, Visitor};
@@ -21,7 +22,8 @@ criterion_group!(
     hash_block_txs,
     find_tx,
     block_hash,
-    len
+    len,
+    script,
 );
 criterion_main!(benches);
 
@@ -283,4 +285,25 @@ pub fn len(c: &mut Criterion) {
                 assert_eq!(value_ok, 8);
             })
         });
+}
+
+pub fn script(c: &mut Criterion) {
+    let slices = [
+        &[0x01u8, 0x00][..],                               // 1 byte script
+        &[0x06u8, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06][..], // 6 byte script
+        &[0xFDu8, 0xFD, 0x00, 0x00][..],                   // minimal FD encoding
+        &[0xFDu8, 0xFF, 0xFF][..],                         // invalid - not enough bytes
+        &[0xFEu8, 0x00, 0x00, 0x01, 0x00, 0x00][..],       // minimal FE encoding
+        &[0xFEu8, 0xFF, 0xFF, 0xFF][..],                   // invalid - not enough bytes
+        &[0xFFu8, 0x00, 0x00, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00, 0x00][..], // minimal FF encoding
+        &[0xFFu8, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF][..], // invalid - not enough bytes
+    ];
+    c.benchmark_group("script").bench_function("parse", |b| {
+        b.iter(|| {
+            for slice in slices {
+                let script = bsl::Script::parse(&slice[..]);
+                black_box(&script);
+            }
+        })
+    });
 }
