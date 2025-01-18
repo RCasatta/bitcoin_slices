@@ -60,6 +60,12 @@ mod test {
             Witness::parse(&witness[..]),
             Ok(ParseResult::new_exact(expected))
         );
+
+        let malformed_witness = hex!("02010001");
+        assert_eq!(
+            Witness::parse(&malformed_witness[..]),
+            Err(crate::Error::MoreBytesNeeded)
+        );
     }
 
     #[test]
