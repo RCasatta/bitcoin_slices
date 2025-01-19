@@ -53,3 +53,17 @@ jobs:
       - uses: actions/checkout@v3
       - uses: dtolnay/rust-toolchain@stable
       - run: cargo bench --all-features
+
+  fuzz:
+    name: Fuzz
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        fuzz_target: ["block", "block_header", "len", "out_point", "script", "transaction", "tx_in", "tx_ins", "tx_out", "tx_outs", "witness", "witnesses"]
+    steps:
+      - uses: actions/checkout@v3
+      - uses: dtolnay/rust-toolchain@nightly
+      - run: cargo install cargo-fuzz
+      - run: cargo fuzz run ${{ matrix.fuzz_target }} -- -max_total_time=120
+
