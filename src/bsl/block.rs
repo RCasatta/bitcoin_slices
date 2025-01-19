@@ -133,15 +133,13 @@ mod test {
         );
         assert_eq!(block.consumed(), 285);
 
-        let block = Block::parse(&mainnet_702861()).unwrap();
+        let block = Block::parse(mainnet_702861()).unwrap();
         assert_eq!(block.remaining(), &[][..]);
         assert_eq!(
             block.parsed(),
             &Block {
-                slice: &mainnet_702861(),
-                header: BlockHeader::parse(&mainnet_702861())
-                    .unwrap()
-                    .parsed_owned(),
+                slice: mainnet_702861(),
+                header: BlockHeader::parse(mainnet_702861()).unwrap().parsed_owned(),
                 total_txs: 2500,
             }
         );

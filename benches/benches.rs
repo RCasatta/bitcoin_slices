@@ -1,7 +1,7 @@
 use bitcoin::consensus::deserialize;
 use bitcoin_hashes::sha256d;
 use bitcoin_slices::bsl;
-use bitcoin_slices::bsl::{parse_len, scan_len};
+use bitcoin_slices::bsl::scan_len;
 use bitcoin_slices::bsl::{Block, BlockHeader, FindTransaction, Transaction, TxOut};
 use bitcoin_slices::{Parse, Visit, Visitor};
 use bitcoin_test_data::blocks::mainnet_702861;
@@ -249,6 +249,7 @@ pub fn block_hash(c: &mut Criterion) {
         });
 }
 
+#[allow(deprecated)]
 pub fn len(c: &mut Criterion) {
     let slices = [
         &[0x01u8][..],                                               // small value
@@ -281,7 +282,8 @@ pub fn len(c: &mut Criterion) {
                 let mut sum = 0u128;
                 let mut value_ok = 0u64;
                 for slice in slices {
-                    let len = parse_len(&slice[..]).unwrap();
+                    #[allow(deprecated)]
+                    let len = bitcoin_slices::bsl::parse_len(&slice[..]).unwrap();
 
                     sum += len.n() as u128;
                     value_ok += 1;

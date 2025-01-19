@@ -205,7 +205,7 @@ mod test {
         assert_eq!(tx.parsed().locktime(), 0);
 
         check_hash(
-            &tx.parsed(),
+            tx.parsed(),
             hex!("4a5e1e4baab89f3a32518a88c31bc87f618f76673e2cc77ab2127b7afdeda33b"),
         );
     }
@@ -221,7 +221,7 @@ mod test {
         assert_eq!(tx.parsed().locktime(), 0);
 
         check_hash(
-            &tx.parsed(),
+            tx.parsed(),
             hex!("4be105f158ea44aec57bf12c5817d073a712ab131df6f37786872cfc70734188"), // testnet tx
         );
     }

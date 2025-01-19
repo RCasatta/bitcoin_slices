@@ -1,4 +1,4 @@
-use crate::{slice::split_at_checked, Error, Parse, ParseResult, SResult};
+use crate::{slice::split_at_checked, Parse, ParseResult, SResult};
 
 /// The out point of a transaction input, identifying the previous output being spent
 #[derive(Debug, Clone, PartialEq, Eq)]

@@ -89,7 +89,7 @@ mod test {
                 match self.witness_vin {
                     0 => assert_eq!(witness_total, 1),
                     1 => assert_eq!(witness_total, 2),
-                    _ => assert!(false),
+                    _ => panic!("Invalid witness"),
                 }
             }
             fn visit_witness_element(&mut self, _witness_i: usize, witness_element: &[u8]) {
@@ -97,7 +97,7 @@ mod test {
                     (0, 0) => assert_eq!(witness_element, &[0u8]),
                     (1, 0) => assert_eq!(witness_element, &[1u8]),
                     (1, 1) => assert_eq!(witness_element, &[2u8]),
-                    _ => assert!(false),
+                    _ => panic!("Invalid witness"),
                 }
                 self.witness_el_i += 1;
             }

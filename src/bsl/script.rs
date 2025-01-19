@@ -1,5 +1,5 @@
 use super::scan_len;
-use crate::{slice::split_at_checked, Error, Parse, ParseResult, SResult};
+use crate::{slice::split_at_checked, Parse, ParseResult, SResult};
 
 /// The Script, this type could be found in transaction outputs as `script_pubkey` or in transaction
 /// inputs as `script_sig`.
