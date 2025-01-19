@@ -88,6 +88,12 @@ pub fn block_deserialize(c: &mut Criterion) {
                 let block_header = BlockHeader::parse(&GENESIS_BLOCK_HEADER).unwrap();
                 black_box(&block_header);
             })
+        })
+        .bench_function("bitcoin_header", |b| {
+            b.iter(|| {
+                let block: bitcoin::block::Header = deserialize(&GENESIS_BLOCK_HEADER).unwrap();
+                black_box(&block);
+            })
         });
 }
 

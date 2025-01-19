@@ -141,9 +141,9 @@ test tx_id/slices_sha2 ... bench:                     152 ns/iter (+/- 0)
 test tx_id/bitcoin ... bench:                         232 ns/iter (+/- 2)
 
 test block_deserialize/slices ... bench:           104902 ns/iter (+/- 4190)
-
 test block_deserialize/bitcoin ... bench:         1177448 ns/iter (+/- 64613)
 test block_deserialize/slices_header ... bench:         0 ns/iter (+/- 0)
+test block_deserialize/bitcoin_header ... bench:       29 ns/iter (+/- 2)
 
 test block_sum_outputs/slices ... bench:           109554 ns/iter (+/- 3753)
 test block_sum_outputs/bitcoin ... bench:         1189417 ns/iter (+/- 49148)
