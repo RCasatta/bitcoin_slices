@@ -1,22 +1,12 @@
 #![no_main]
-use bitcoin_slices::bsl::Len;
-use bitcoin_slices::fuzzing::check;
+use bitcoin_slices::bsl::{parse_len, scan_len};
 use libfuzzer_sys::fuzz_target;
 
 fuzz_target!(|data: &[u8]| {
-    let p = Len::parse(data);
-    check(data, p);
-});
-
-/// Some checks on a succesfull parse
-pub fn check<T: AsRef<[u8]>>(
-    data: &[u8],
-    p: Result<bitcoin_slices::ParseResult<T>, bitcoin_slices::Error>,
-) {
-    if let Ok(p) = p {
-        let consumed = p.consumed();
-        assert_eq!(p.parsed().as_ref().len(), consumed);
-        assert_eq!(&data[..consumed], p.parsed().as_ref());
-        assert_eq!(&data[consumed..], p.remaining());
+    if let Ok(len) = parse_len(data) {
+        let mut consumed = 0;
+        let scan_len = scan_len(data, &mut consumed).unwrap();
+        assert_eq!(len.n(), scan_len);
+        assert_eq!(len.consumed(), consumed);
     }
-}
+});

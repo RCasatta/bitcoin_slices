@@ -193,6 +193,13 @@ Minimize corpus:
 cargo +nightly fuzz cmin transaction
 ```
 
+For NixOs there is a flake with a shell to setup the environment and run fuzzing.
+```sh
+cd fuzz
+nix develop -C $SHELL
+cargo fuzz run transaction
+```
+
 ## Doc
 
 To build docs:

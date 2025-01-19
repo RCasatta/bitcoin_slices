@@ -1,6 +1,6 @@
 #![no_main]
 use bitcoin_slices::bsl::Witness;
-use bitcoin_slices::fuzzing::check;
+use bitcoin_slices::Parse;
 use libfuzzer_sys::fuzz_target;
 
 fuzz_target!(|data: &[u8]| {

@@ -20,9 +20,6 @@
 
           # Required for cargo-fuzz
           cargo-fuzz
-
-          # Common build dependencies
-          pkg-config
         ];
 
         # Set RUST_BACKTRACE for better error reporting
