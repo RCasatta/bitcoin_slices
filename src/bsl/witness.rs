@@ -25,7 +25,7 @@ impl<'a> Visit<'a> for Witness<'a> {
         for i in 0..witness_total_element {
             let len = scan_len(&slice[consumed..], &mut consumed)? as usize;
             let witness_element = &slice
-                .get(consumed..consumed + len)
+                .get(consumed..consumed.saturating_add(len))
                 .ok_or(Error::MoreBytesNeeded)?;
             consumed += len;
             visit.visit_witness_element(i, witness_element);
@@ -49,6 +49,10 @@ mod test {
     use crate::{bsl::Witness, Parse, ParseResult, Visit, Visitor};
     use hex_lit::hex;
 
+    const FUZZ_DATA: [u8; 14] = [
+        189, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 2,
+    ];
+
     #[test]
     fn parse_witness() {
         let witness = hex!("0201000100");
@@ -65,6 +69,11 @@ mod test {
         let malformed_witness = hex!("02010001");
         assert_eq!(
             Witness::parse(&malformed_witness[..]),
+            Err(crate::Error::MoreBytesNeeded)
+        );
+
+        assert_eq!(
+            Witness::parse(&FUZZ_DATA),
             Err(crate::Error::MoreBytesNeeded)
         );
     }

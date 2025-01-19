@@ -17,7 +17,7 @@ impl<'a> Parse<'a> for Script<'a> {
     fn parse(slice: &'a [u8]) -> SResult<Self> {
         let mut consumed = 0;
         let n = scan_len(slice, &mut consumed)? as usize;
-        let (script_bytes, remaining) = split_at_checked(slice, consumed + n)?;
+        let (script_bytes, remaining) = split_at_checked(slice, consumed.saturating_add(n))?;
         Ok(ParseResult::new(
             remaining,
             Script {

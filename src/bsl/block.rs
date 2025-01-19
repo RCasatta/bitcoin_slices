@@ -117,6 +117,16 @@ mod test {
         Parse,
     };
 
+    const FUZZ_DATA: [u8; 132] = [
+        255, 255, 255, 255, 1, 0, 0, 0, 255, 255, 255, 255, 255, 2, 0, 0, 0, 0, 65, 0, 0, 0, 255,
+        255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 182, 182, 182,
+        255, 255, 182, 182, 182, 182, 182, 182, 182, 182, 255, 255, 255, 255, 255, 255, 255, 255,
+        255, 0, 0, 0, 0, 0, 0, 0, 0, 251, 251, 251, 251, 251, 251, 251, 251, 251, 251, 251, 251,
+        251, 251, 251, 251, 251, 251, 251, 251, 251, 251, 0, 0, 0, 255, 255, 255, 255, 255, 255,
+        255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 0, 0, 0, 253, 255,
+        255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 10,
+    ];
+
     #[test]
     fn parse_block() {
         let block_header = BlockHeader::parse(&GENESIS_BLOCK).unwrap();
@@ -145,6 +155,8 @@ mod test {
         );
         assert_eq!(block.consumed(), 1381836);
 
+        let block = Block::parse(&FUZZ_DATA).unwrap_err();
+        assert_eq!(block, crate::Error::MoreBytesNeeded);
         // let mut iter = block.parsed.transactions();
         // let genesis_tx = iter.next().unwrap();
         // assert_eq!(genesis_tx.as_ref(), GENESIS_TX);
