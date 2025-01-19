@@ -1,4 +1,4 @@
-use crate::{Error, Parse, ParseResult, SResult};
+use crate::{slice::split_at_checked, Error, Parse, ParseResult, SResult};
 
 /// The out point of a transaction input, identifying the previous output being spent
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -15,7 +15,7 @@ impl<'a> AsRef<[u8]> for OutPoint<'a> {
 impl<'a> Parse<'a> for OutPoint<'a> {
     /// Parse the out point from the given slice
     fn parse(slice: &'a [u8]) -> SResult<Self> {
-        let (slice, remaining) = slice.split_at_checked(36).ok_or(Error::MoreBytesNeeded)?;
+        let (slice, remaining) = split_at_checked(slice, 36)?;
         Ok(ParseResult::new(remaining, OutPoint { slice }))
     }
 }

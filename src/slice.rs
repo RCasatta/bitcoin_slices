@@ -13,6 +13,17 @@ pub fn read_slice(from: &[u8], len: usize) -> SResult<&[u8]> {
     }
 }
 
+/// Split the slice at the given length, returning the remaining slice and the parsed slice.
+/// Replace with std split_at_checked when MSRV >= 1.80.0
+#[inline(always)]
+pub(crate) fn split_at_checked(from: &[u8], len: usize) -> Result<(&[u8], &[u8]), Error> {
+    if from.len() < len {
+        Err(Error::MoreBytesNeeded)
+    } else {
+        Ok(from.split_at(len))
+    }
+}
+
 #[cfg(test)]
 mod test {
     use crate::{Error, ParseResult};
