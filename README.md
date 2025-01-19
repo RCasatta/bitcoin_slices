@@ -133,28 +133,40 @@ cargo bench --bench benches --all-features -- --output-format bencher
 ```
 
 ```sh
-test tx_deserialize/slices       ... bench:          29 ns/iter (+/- 0)
-test tx_deserialize/bitcoin      ... bench:         211 ns/iter (+/- 0)
+test tx_deserialize/slices ... bench:                  13 ns/iter (+/- 0)
+test tx_deserialize/bitcoin ... bench:                203 ns/iter (+/- 4)
 
-test tx_id/slices_bitcoin_hashes ... bench:         183 ns/iter (+/- 0)
-test tx_id/slices_sha2           ... bench:         158 ns/iter (+/- 0)
-test tx_id/bitcoin               ... bench:         234 ns/iter (+/- 1)
+test tx_id/slices_bitcoin_hashes ... bench:           180 ns/iter (+/- 1)
+test tx_id/slices_sha2 ... bench:                     152 ns/iter (+/- 0)
+test tx_id/bitcoin ... bench:                         232 ns/iter (+/- 2)
 
-test block_deserialize/slices    ... bench:      230872 ns/iter (+/- 1686)
-test block_deserialize/bitcoin   ... bench:     1462784 ns/iter (+/- 115792)
+test block_deserialize/slices ... bench:           104902 ns/iter (+/- 4190)
 
-test block_sum_outputs/slices    ... bench:      235757 ns/iter (+/- 1318)
-test block_sum_outputs/bitcoin   ... bench:     1459730 ns/iter (+/- 95817)
+test block_deserialize/bitcoin ... bench:         1177448 ns/iter (+/- 64613)
+test block_deserialize/slices_header ... bench:         0 ns/iter (+/- 0)
 
-test hash_block_txs/slices       ... bench:      881940 ns/iter (+/- 4961)
-test hash_block_txs/slices_sha2  ... bench:      789365 ns/iter (+/- 932)
-test hash_block_txs/bitcoin      ... bench:     2301561 ns/iter (+/- 15406)
+test block_sum_outputs/slices ... bench:           109554 ns/iter (+/- 3753)
+test block_sum_outputs/bitcoin ... bench:         1189417 ns/iter (+/- 49148)
 
-test find_tx/slices              ... bench:      406519 ns/iter (+/- 1423)
-test find_tx/bitcoin             ... bench:     1826147 ns/iter (+/- 122216)
+test hash_block_txs/slices ... bench:              742792 ns/iter (+/- 1269)
+test hash_block_txs/slices_sha2 ... bench:         650505 ns/iter (+/- 3008)
+test hash_block_txs/bitcoin ... bench:            1976693 ns/iter (+/- 12015)
+test hash_block_txs/bitcoin_block_ready ... bench: 797423 ns/iter (+/- 4884)
 
-test block_hash/slices           ... bench:         112 ns/iter (+/- 0)
-test block_hash/bitcoin          ... bench:         146 ns/iter (+/- 2)
+test find_tx/slices ... bench:                     327972 ns/iter (+/- 2049)
+test find_tx/bitcoin ... bench:                   1548186 ns/iter (+/- 60774)
+
+test block_hash/slices ... bench:                     112 ns/iter (+/- 0)
+test block_hash/bitcoin ... bench:                    137 ns/iter (+/- 0)
+
+test len/scan_len ... bench:                            5 ns/iter (+/- 0)
+test len/parse_len ... bench:                           5 ns/iter (+/- 0)
+
+test script/parse ... bench:                           12 ns/iter (+/- 0)
+
+test witness/parse_single_witness ... bench:           18 ns/iter (+/- 0)
+test witness/parse_multiple_witnesses ... bench:       29 ns/iter (+/- 0)
+
 ```
 
 * benches variants with `/bitcoin` use `rust-bitcoin`
