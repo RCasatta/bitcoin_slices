@@ -145,14 +145,12 @@ impl<'a> AsRef<[u8]> for Transaction<'a> {
 impl<'o> redb::RedbValue for Transaction<'o> {
     // TODO fix where position once MSRV allows
     type SelfType<'a>
-    where
-        Self: 'a,
-    = Transaction<'a>;
+    
+    = Transaction<'a> where Self: 'a;
 
     type AsBytes<'a>
-    where
-        Self: 'a,
-    = &'a [u8];
+    
+    = &'a [u8] where Self: 'a;
 
     fn fixed_width() -> Option<usize> {
         None
