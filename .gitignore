@@ -17,6 +17,7 @@ perf.data.old
 # Nix
 result
 result-*
+.cargo-nix/
 
 # Editor swap files
 *.swp

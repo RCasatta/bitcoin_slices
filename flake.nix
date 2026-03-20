@@ -29,6 +29,12 @@
             # For criterion benchmarks
             gnuplot
           ];
+
+          # Use a separate cargo home to avoid conflicts with system cargo cache
+          # This prevents issues when the system has a newer Rust version
+          shellHook = ''
+            export CARGO_HOME="$PWD/.cargo-nix"
+          '';
         };
       }
     );
