@@ -64,7 +64,7 @@ while true; do
 
     # Call opencode to make an optimization
     echo "Calling opencode to make optimization..."
-    opencode --model llama.cpp/default-model --prompt "$(cat <<'EOF'
+    opencode --model llama.cpp/default-model --prompt "$(cat <<EOF
 You are in iteration $ITERATION of autonomous optimization.
 
 Current best benchmark time: $BEST_TIME nanoseconds
