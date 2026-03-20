@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 # Manually run a single autoresearch iteration
 # Useful for testing and debugging
 

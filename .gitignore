@@ -13,3 +13,12 @@ baseline.json
 flamegraph.svg
 perf.data
 perf.data.old
+
+# Nix
+result
+result-*
+
+# Editor swap files
+*.swp
+*.swo
+*~

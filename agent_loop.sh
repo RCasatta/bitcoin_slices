@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 # Autonomous optimization loop using opencode
 # Similar to autoresearch's continuous experimentation
 

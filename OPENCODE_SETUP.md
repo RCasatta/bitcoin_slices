@@ -2,6 +2,15 @@
 
 This guide explains how to configure opencode to work with your local Nemotron-3-Nano-30B model for autoresearch.
 
+## NixOS Quick Start
+
+If you're on NixOS, use the provided `shell.nix`:
+
+```bash
+nix-shell  # Provides all dependencies: cargo, python3, jq, bc, etc.
+./test_setup.sh
+```
+
 ## Prerequisites
 
 ### 1. Local LLM Server (llama.cpp)

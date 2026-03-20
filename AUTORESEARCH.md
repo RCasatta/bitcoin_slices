@@ -21,9 +21,15 @@ An LLM agent continuously makes small optimizations to the `block_deserialize/sl
 
 2. **Python 3** with jq for JSON parsing
    ```bash
-   sudo apt-get install python3 jq bc  # Ubuntu/Debian
-   # or
-   brew install jq bc  # macOS
+   # NixOS: Add to environment.systemPackages or use nix-shell
+   nix-shell -p python3 jq bc
+
+   # Or install to user profile
+   nix-env -iA nixpkgs.jq nixpkgs.bc
+
+   # Other systems
+   # Ubuntu/Debian: sudo apt-get install python3 jq bc
+   # macOS: brew install jq bc
    ```
 
 3. **Opencode CLI** configured for your local LLM

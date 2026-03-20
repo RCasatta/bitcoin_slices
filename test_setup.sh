@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 # Test that the autoresearch setup is working correctly
 
 set -e
@@ -22,13 +22,13 @@ fi
 echo "  ✓ python3 found"
 
 if ! command -v jq &> /dev/null; then
-    echo "❌ jq not found. Install with: sudo apt-get install jq"
+    echo "❌ jq not found. Install with your package manager (e.g., 'nix-env -iA nixpkgs.jq' or add to environment)"
     exit 1
 fi
 echo "  ✓ jq found"
 
 if ! command -v bc &> /dev/null; then
-    echo "❌ bc not found. Install with: sudo apt-get install bc"
+    echo "❌ bc not found. Install with your package manager (e.g., 'nix-env -iA nixpkgs.bc' or add to environment)"
     exit 1
 fi
 echo "  ✓ bc found"

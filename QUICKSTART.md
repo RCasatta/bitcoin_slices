@@ -5,6 +5,13 @@ Get started with autonomous optimization in 5 minutes.
 ## Prerequisites Check
 
 ```bash
+# On NixOS, you may want to use nix-shell for dependencies
+nix-shell  # Uses the provided shell.nix
+
+# Or manually specify packages
+# nix-shell -p python3 jq bc cargo
+
+# Then verify setup
 ./test_setup.sh
 ```
 
