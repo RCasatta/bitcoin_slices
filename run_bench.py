@@ -27,9 +27,8 @@ def run_benchmark():
         "--save-baseline", "current"
     ]
 
-    # Wrap in direnv exec to ensure correct Rust version (1.74.0 from rust-toolchain.toml)
-    # Using direnv exec reuses cache and is faster than nix develop
-    cmd = ["direnv", "exec", "."] + cargo_cmd
+    # Wrap in nix develop to ensure correct Rust version (1.74.0 from rust-toolchain.toml)
+    cmd = ["nix", "develop", "-c"] + cargo_cmd
 
     print(f"Running: {' '.join(cmd)}", file=sys.stderr)
 

@@ -87,7 +87,7 @@ echo ""
 
 # Run tests
 echo "Running tests..."
-if direnv exec . cargo test --all-features --quiet; then
+if nix develop -c cargo test --all-features --quiet; then
     echo "✓ Tests passed"
 else
     echo "✗ Tests FAILED!"

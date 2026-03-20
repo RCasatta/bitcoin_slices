@@ -53,7 +53,7 @@ echo ""
 
 # Check that the project builds
 echo "2. Building project..."
-if ! direnv exec . cargo build --all-features --quiet; then
+if ! nix develop -c cargo build --all-features --quiet; then
     echo "❌ Build failed"
     exit 1
 fi
@@ -63,7 +63,7 @@ echo ""
 
 # Run tests
 echo "3. Running tests..."
-if ! direnv exec . cargo test --all-features --quiet; then
+if ! nix develop -c cargo test --all-features --quiet; then
     echo "❌ Tests failed"
     exit 1
 fi
