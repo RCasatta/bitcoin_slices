@@ -17,14 +17,19 @@ BENCHMARK_RUNS = 100  # Criterion sample size
 
 def run_benchmark():
     """Execute the cargo benchmark and capture output."""
-    cmd = [
+    cargo_cmd = [
         "cargo", "bench",
         BENCHMARK_FEATURES,
+        "--bench", "benches",
         "--",
         BENCHMARK_TARGET,
         "--sample-size", str(BENCHMARK_RUNS),
         "--save-baseline", "current"
     ]
+
+    # Wrap in direnv exec to ensure correct Rust version (1.74.0 from rust-toolchain.toml)
+    # Using direnv exec reuses cache and is faster than nix develop
+    cmd = ["direnv", "exec", "."] + cargo_cmd
 
     print(f"Running: {' '.join(cmd)}", file=sys.stderr)
 

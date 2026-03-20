@@ -103,7 +103,7 @@ EOF
 
     echo ""
     echo "Running tests..."
-    if ! cargo test --all-features --quiet; then
+    if ! direnv exec . cargo test --all-features --quiet; then
         echo -e "${RED}Tests failed! Reverting commit.${NC}"
         git reset --hard "$PREV_COMMIT"
 
