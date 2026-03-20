@@ -1,0 +1,41 @@
+{
+  "model": {
+    "type": "llama",
+    "endpoint": "http://localhost:8080",
+    "model_name": "Nemotron-3-Nano-30B-A3B-UD-Q4_K_XL"
+  },
+  "constraints": {
+    "no_unsafe": true,
+    "max_function_lines": 100,
+    "preserve_api": true,
+    "no_new_dependencies": true
+  },
+  "benchmark": {
+    "target": "block_deserialize/slices",
+    "features": "--all-features",
+    "metric": "time_ns",
+    "minimize": true
+  },
+  "files": {
+    "editable": [
+      "src/bsl/block.rs",
+      "src/bsl/transaction.rs",
+      "src/bsl/len.rs",
+      "src/bsl/block_header.rs",
+      "src/bsl/tx_in.rs",
+      "src/bsl/tx_ins.rs",
+      "src/bsl/tx_out.rs",
+      "src/bsl/tx_outs.rs",
+      "src/bsl/witness.rs",
+      "src/bsl/witnesses.rs",
+      "src/slice.rs",
+      "src/number.rs"
+    ],
+    "readonly": [
+      "benches/benches.rs",
+      "src/error.rs",
+      "src/lib.rs",
+      "Cargo.toml"
+    ]
+  }
+}

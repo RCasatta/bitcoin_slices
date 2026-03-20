@@ -2,3 +2,14 @@
 /Cargo.lock
 .vscode/
 .direnv/
+
+# Autoresearch artifacts
+results.tsv
+.best_time
+.iteration_count
+run.log
+bench_result.json
+baseline.json
+flamegraph.svg
+perf.data
+perf.data.old
