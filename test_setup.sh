@@ -38,6 +38,15 @@ if ! command -v opencode &> /dev/null; then
     echo "   For now, you can test the benchmark manually."
 else
     echo "  ✓ opencode found"
+
+    # Check if local model server is reachable
+    if curl -s -m 5 http://ripper:11434/v1/models > /dev/null 2>&1; then
+        echo "  ✓ Local model server (ripper:11434) is reachable"
+    else
+        echo "  ⚠️  Local model server (ripper:11434) is not reachable"
+        echo "     Check that the llama.cpp server is running on ripper"
+        echo "     You can still run benchmarks manually, but agent_loop.sh won't work"
+    fi
 fi
 
 echo ""

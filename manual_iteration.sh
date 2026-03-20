@@ -52,7 +52,7 @@ Remember the constraints:
 
 Focus on a single, measurable improvement."
 
-    opencode --prompt "$PROMPT"
+    opencode --model llama.cpp/default-model --prompt "$PROMPT"
 
     if [ $? -ne 0 ]; then
         echo "Opencode failed!"
