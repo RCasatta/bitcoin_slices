@@ -17,6 +17,7 @@ pub struct Transaction<'a> {
 }
 
 impl<'a> Visit<'a> for Transaction<'a> {
+    #[inline(always)]
     fn visit<'b, V: Visitor>(slice: &'a [u8], visit: &'b mut V) -> SResult<'a, Self> {
         let _version = read_i32(slice)?;
         let inputs = TxIns::visit(&slice[4..], visit)?;

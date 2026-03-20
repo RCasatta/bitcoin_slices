@@ -16,6 +16,7 @@ pub struct BlockHeader<'a> {
 }
 
 impl<'a> Visit<'a> for BlockHeader<'a> {
+    #[inline(always)]
     fn visit<'b, V: Visitor>(slice: &'a [u8], visit: &'b mut V) -> SResult<'a, Self> {
         if slice.len() < 80 {
             return Err(Error::MoreBytesNeeded);

@@ -16,6 +16,7 @@ impl<'a> AsRef<[u8]> for Witness<'a> {
 }
 
 impl<'a> Visit<'a> for Witness<'a> {
+    #[inline(always)]
     fn visit<'b, V: Visitor>(slice: &'a [u8], visit: &'b mut V) -> SResult<'a, Witness<'a>> {
         let mut consumed = 0usize;
         let n = scan_len(slice, &mut consumed)?;
