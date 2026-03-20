@@ -71,7 +71,7 @@ pub fn tx_id(c: &mut Criterion) {
 pub fn block_deserialize(c: &mut Criterion) {
     c.benchmark_group("block_deserialize")
         .throughput(criterion::Throughput::Bytes(mainnet_702861().len() as u64))
-        .bench_function("slices", |b| {
+        .bench_function("slices_block", |b| {
             b.iter(|| {
                 let block = Block::parse(mainnet_702861()).unwrap();
                 black_box(&block);

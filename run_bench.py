@@ -11,7 +11,7 @@ import sys
 from pathlib import Path
 
 # Configuration
-BENCHMARK_TARGET = "block_deserialize/slices"
+BENCHMARK_TARGET = "block_deserialize/slices_block"
 BENCHMARK_FEATURES = "--all-features"
 BENCHMARK_RUNS = 100  # Criterion sample size
 
@@ -49,7 +49,7 @@ def extract_metrics(output):
     Extract benchmark metrics from Criterion output.
 
     Expected format:
-    block_deserialize/slices
+    block_deserialize/slices_block
                             time:   [104.85 µs 104.90 µs 104.96 µs]
                             thrpt:  [12.558 GiB/s 12.565 GiB/s 12.571 GiB/s]
     """
