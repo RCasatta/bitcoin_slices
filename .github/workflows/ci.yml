@@ -7,7 +7,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        toolchain: ["1.60.0", "1.64.0", "1.66.0", "stable", "nightly"]
+        toolchain: ["1.74.0", "stable", "nightly"]
     steps:
       - uses: actions/checkout@v3
       - uses: dtolnay/rust-toolchain@master
@@ -15,14 +15,8 @@ jobs:
           toolchain: ${{ matrix.toolchain }}
       - run: cargo update -p cc --precise 1.0.28
 
-      - run: cargo build --features bitcoin,sha2
-        if: ${{ matrix.toolchain == '1.60.0' }}
-      - run: cargo build --features slice_cache
-        if: ${{ matrix.toolchain == '1.64.0' }}
-      - run: cargo build --features redb
-        if: ${{ matrix.toolchain == '1.66.0' }}
       - run: cargo build --all-features
-        if: ${{ matrix.toolchain == 'stable' || matrix.toolchain == 'nightly' }}
+        if: ${{ matrix.toolchain == '1.74.0' || matrix.toolchain == 'stable' || matrix.toolchain == 'nightly' }}
       
         
 

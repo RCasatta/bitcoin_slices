@@ -222,9 +222,7 @@ RUSTDOCFLAGS="--cfg docsrs" cargo +nightly doc --all-features --open
 
 ## MSRV
 
-Minimum Supported Rust Version of this crate is 1.60.0 without `redb`,`slice_cache` features, (double check with what is running in the CI)
-With `slice_cache` feature MSRV is 1.64.0.
-With `redb` feature MSRV is 1.66.0.
+Minimum Supported Rust Version of this crate is 1.74.0 (check `.github/workflows/ci.yml` for current CI configuration).
 
 
 
