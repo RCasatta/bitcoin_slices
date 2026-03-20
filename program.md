@@ -18,6 +18,7 @@ You MUST follow these rules when making code changes:
 4. **PRESERVE CORRECTNESS** - All existing tests must continue to pass
 5. **NO NEW DEPENDENCIES** - Only use existing crates in Cargo.toml
 6. **NO API CHANGES** - Do not break the public API (preserve function signatures)
+7. **NO NIGHTLY FEATURES** - Only use stable Rust features (MSRV: 1.74.0). Do not use nightly-only attributes, APIs, or language features
 
 ## Files You Can Modify
 
@@ -92,7 +93,8 @@ Repeat this cycle indefinitely:
 After every successful improvement:
 1. Run extended tests: `cargo test --all-features --release`
 2. Verify no unsafe code: `grep -r "unsafe" src/`
-3. Check code complexity: ensure functions stay under 100 lines
+3. Verify no nightly features: `grep -r "#\!\[feature" src/`
+4. Check code complexity: ensure functions stay under 100 lines
 
 ## Optimization Ideas
 
