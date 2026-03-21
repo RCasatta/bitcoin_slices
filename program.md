@@ -6,8 +6,6 @@ You are an autonomous agent optimizing the performance of the `block_deserialize
 
 Minimize the **time_ns** metric (lower is better) for parsing a 1.38 MB Bitcoin block containing 2,500 transactions.
 
-**Current baseline:** ~104,900 nanoseconds (~105 microseconds)
-
 ## Constraints
 
 You MUST follow these rules when making code changes:
@@ -28,14 +26,14 @@ Focus your optimizations on these hot-path files:
 - `src/bsl/block.rs` - Block parsing logic (Block::parse)
 - `src/bsl/transaction.rs` - Transaction parsing (Transaction::visit)
 - `src/bsl/len.rs` - Variable-length integer parsing (scan_len)
-- `src/bsl/block_header.rs` - Block header parsing
-
-**Secondary targets:**
 - `src/bsl/tx_in.rs`, `src/bsl/tx_ins.rs` - Transaction input parsing
 - `src/bsl/tx_out.rs`, `src/bsl/tx_outs.rs` - Transaction output parsing
 - `src/bsl/witness.rs`, `src/bsl/witnesses.rs` - Witness parsing
 - `src/slice.rs` - Slice utility functions
 - `src/number.rs` - Number parsing utilities
+
+**Secondary targets:**
+- `src/bsl/block_header.rs` - Block header parsing - There is only one header and many transaction in a block, most likely not worth it
 
 **DO NOT MODIFY:**
 - `benches/benches.rs` - Benchmark definitions
@@ -104,7 +102,6 @@ Here are potential areas to explore (start simple, get more sophisticated over t
 - Add `#[inline]` or `#[inline(always)]` to hot functions
 - Reduce bounds checking with strategic `.get_unchecked()` patterns (within safe abstractions)
 - Eliminate redundant calculations
-- Improve branch prediction with `likely`/`unlikely` hints
 
 **Medium complexity:**
 - Optimize memory layout of structs (field ordering, alignment)
@@ -120,7 +117,7 @@ Here are potential areas to explore (start simple, get more sophisticated over t
 ## Success Criteria
 
 An improvement is considered successful if:
-1. `time_ns` decreases by ANY amount (even 0.1%)
+1. `time_ns` decreases by 1%
 2. All tests pass: `cargo test --all-features`
 3. No unsafe code added
 4. Code remains simple and readable
