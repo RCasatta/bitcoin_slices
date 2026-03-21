@@ -9,6 +9,7 @@ RESULTS_FILE="results.tsv"
 BEST_TIME_FILE=".best_time"
 ITERATION_COUNT_FILE=".iteration_count"
 MAX_ITERATIONS=${MAX_ITERATIONS:-1000}  # Safety limit, set to 0 for unlimited
+OPENCODE_TIMEOUT="3h"
 
 # Colors for output
 GREEN='\033[0;32m'
@@ -62,9 +63,12 @@ while true; do
     # Store current commit for potential revert
     PREV_COMMIT=$(git rev-parse HEAD)
 
+    # Pre-set the exit code to 0 to assume success
+    OPENCODE_EXIT=0
+
     # Call opencode to make an optimization
     echo "Calling opencode to make optimization..."
-    opencode run --model llama.cpp/default-model "$(cat <<EOF
+    timeout --foreground $OPENCODE_TIMEOUT opencode run --model llama.cpp/default-model "$(cat <<EOF
 You are in iteration $ITERATION of autonomous optimization.
 
 Current best benchmark time: $BEST_TIME nanoseconds
@@ -78,9 +82,10 @@ Read the program.md file for instructions, then:
 
 Focus on one small, measurable improvement. Think step by step.
 EOF
-)"
+)" || OPENCODE_EXIT=$?
 
-    OPENCODE_EXIT=$?
+    echo "opencode returned $OPENCODE_EXIT"
+
 
     # Check if opencode made changes
     NEW_COMMIT=$(git rev-parse HEAD)
