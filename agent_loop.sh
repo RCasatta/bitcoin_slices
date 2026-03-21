@@ -68,7 +68,7 @@ while true; do
 
     # Call opencode to make an optimization
     echo "Calling opencode to make optimization..."
-    timeout --foreground $OPENCODE_TIMEOUT opencode run --model llama.cpp/default-model "$(cat <<EOF
+    timeout --foreground $OPENCODE_TIMEOUT opencode run --model llama.cpp/default-model  --thinking "$(cat <<EOF
 You are in iteration $ITERATION of autonomous optimization.
 
 Current best benchmark time: $BEST_TIME nanoseconds
