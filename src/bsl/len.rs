@@ -34,12 +34,12 @@ pub fn parse_len(slice: &[u8]) -> Result<Len, Error> {
 pub fn scan_len(slice: &[u8], consumed: &mut usize) -> Result<u64, Error> {
     match slice.first() {
         Some(0xFFu8) => {
-            let bytes: [u8; 8] = slice
-                .get(1..9)
-                .ok_or(Error::MoreBytesNeeded)?
-                .try_into()
-                .expect("static bounds check");
-            let n = u64::from_le_bytes(bytes);
+            if slice.len() < 9 {
+                return Err(Error::MoreBytesNeeded);
+            }
+            let n = u64::from_le_bytes([
+                slice[1], slice[2], slice[3], slice[4], slice[5], slice[6], slice[7], slice[8],
+            ]);
             if n > u32::MAX as u64 {
                 *consumed += 9;
                 Ok(n)
@@ -48,12 +48,10 @@ pub fn scan_len(slice: &[u8], consumed: &mut usize) -> Result<u64, Error> {
             }
         }
         Some(0xFEu8) => {
-            let bytes: [u8; 4] = slice
-                .get(1..5)
-                .ok_or(Error::MoreBytesNeeded)?
-                .try_into()
-                .expect("static bounds check");
-            let n = u32::from_le_bytes(bytes) as u64;
+            if slice.len() < 5 {
+                return Err(Error::MoreBytesNeeded);
+            }
+            let n = u32::from_le_bytes([slice[1], slice[2], slice[3], slice[4]]) as u64;
             if n > u16::MAX as u64 {
                 *consumed += 5;
                 Ok(n)
@@ -62,12 +60,10 @@ pub fn scan_len(slice: &[u8], consumed: &mut usize) -> Result<u64, Error> {
             }
         }
         Some(0xFDu8) => {
-            let bytes: [u8; 2] = slice
-                .get(1..3)
-                .ok_or(Error::MoreBytesNeeded)?
-                .try_into()
-                .expect("static bounds check");
-            let n = u16::from_le_bytes(bytes) as u64;
+            if slice.len() < 3 {
+                return Err(Error::MoreBytesNeeded);
+            }
+            let n = u16::from_le_bytes([slice[1], slice[2]]) as u64;
             if n >= 0xFD {
                 *consumed += 3;
                 Ok(n)
