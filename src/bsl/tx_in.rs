@@ -14,6 +14,7 @@ pub struct TxIn<'a> {
 }
 
 impl<'a> Parse<'a> for TxIn<'a> {
+    #[inline(always)]
     fn parse(slice: &'a [u8]) -> SResult<Self> {
         let out_point = OutPoint::parse(slice)?;
         let script = Script::parse(out_point.remaining())?;

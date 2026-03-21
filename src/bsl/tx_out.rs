@@ -10,6 +10,7 @@ pub struct TxOut<'a> {
     script_pubkey: Script<'a>,
 }
 impl<'a> Parse<'a> for TxOut<'a> {
+    #[inline(always)]
     fn parse(slice: &'a [u8]) -> SResult<Self> {
         let value = read_u64(slice)?;
         let script = Script::parse(&slice[8..])?;
