@@ -36,8 +36,9 @@ impl<'a> Visit<'a> for TxIns<'a> {
 }
 impl<'a> TxIns<'a> {
     /// Returns if there are no transaction inputs
+    #[inline(always)]
     pub fn is_empty(&self) -> bool {
-        self.slice[0] == 0
+        self.n == 0
     }
     /// Return the number of transaction inputs
     pub fn n(&self) -> usize {

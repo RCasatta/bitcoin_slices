@@ -36,8 +36,9 @@ impl<'a> Visit<'a> for TxOuts<'a> {
 }
 impl<'a> TxOuts<'a> {
     /// If there are no outputs.
+    #[inline(always)]
     pub fn is_empty(&self) -> bool {
-        self.slice[0] == 0
+        self.n == 0
     }
     /// The number of outputs.
     pub fn n(&self) -> usize {
