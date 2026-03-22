@@ -161,7 +161,6 @@ git reset --hard HEAD~1
 ## Remember
 
 - **Smaller changes are better** - One optimization at a time
-- **Profile-guided is better than guessing** - Use `cargo flamegraph` if needed
 - **Correctness first** - Never sacrifice correctness for speed
 - **Simple over clever** - Readable code that's fast is better than unreadable code that's slightly faster
 - **Patience** - Even 0.5% improvements compound over many iterations
