@@ -32,50 +32,56 @@ pub fn parse_len(slice: &[u8]) -> Result<Len, Error> {
 #[inline(always)]
 /// Same as `parse_len` but mutates the `consumed` variable and returns only the value.
 pub fn scan_len(slice: &[u8], consumed: &mut usize) -> Result<u64, Error> {
-    match slice.first() {
-        Some(0xFFu8) => {
-            if slice.len() < 9 {
-                return Err(Error::MoreBytesNeeded);
+    let Some(first_byte) = slice.first() else {
+        return Err(Error::MoreBytesNeeded);
+    };
+
+    if *first_byte < 0xFD {
+        // Common case: single-byte varint (values 0-253)
+        *consumed += 1;
+        Ok(*first_byte as u64)
+    } else {
+        match first_byte {
+            0xFF => {
+                if slice.len() < 9 {
+                    return Err(Error::MoreBytesNeeded);
+                }
+                let n = u64::from_le_bytes([
+                    slice[1], slice[2], slice[3], slice[4], slice[5], slice[6], slice[7], slice[8],
+                ]);
+                if n > u32::MAX as u64 {
+                    *consumed += 9;
+                    Ok(n)
+                } else {
+                    Err(Error::NonMinimalVarInt)
+                }
             }
-            let n = u64::from_le_bytes([
-                slice[1], slice[2], slice[3], slice[4], slice[5], slice[6], slice[7], slice[8],
-            ]);
-            if n > u32::MAX as u64 {
-                *consumed += 9;
-                Ok(n)
-            } else {
-                Err(Error::NonMinimalVarInt)
+            0xFE => {
+                if slice.len() < 5 {
+                    return Err(Error::MoreBytesNeeded);
+                }
+                let n = u32::from_le_bytes([slice[1], slice[2], slice[3], slice[4]]) as u64;
+                if n > u16::MAX as u64 {
+                    *consumed += 5;
+                    Ok(n)
+                } else {
+                    Err(Error::NonMinimalVarInt)
+                }
             }
+            0xFD => {
+                if slice.len() < 3 {
+                    return Err(Error::MoreBytesNeeded);
+                }
+                let n = u16::from_le_bytes([slice[1], slice[2]]) as u64;
+                if n >= 0xFD {
+                    *consumed += 3;
+                    Ok(n)
+                } else {
+                    Err(Error::NonMinimalVarInt)
+                }
+            }
+            _ => unreachable!(), // Already handled < 0xFD case above
         }
-        Some(0xFEu8) => {
-            if slice.len() < 5 {
-                return Err(Error::MoreBytesNeeded);
-            }
-            let n = u32::from_le_bytes([slice[1], slice[2], slice[3], slice[4]]) as u64;
-            if n > u16::MAX as u64 {
-                *consumed += 5;
-                Ok(n)
-            } else {
-                Err(Error::NonMinimalVarInt)
-            }
-        }
-        Some(0xFDu8) => {
-            if slice.len() < 3 {
-                return Err(Error::MoreBytesNeeded);
-            }
-            let n = u16::from_le_bytes([slice[1], slice[2]]) as u64;
-            if n >= 0xFD {
-                *consumed += 3;
-                Ok(n)
-            } else {
-                Err(Error::NonMinimalVarInt)
-            }
-        }
-        Some(x) => {
-            *consumed += 1;
-            Ok(*x as u64)
-        }
-        None => Err(Error::MoreBytesNeeded),
     }
 }
 
