@@ -117,7 +117,7 @@ Here are potential areas to explore (start simple, get more sophisticated over t
 ## Success Criteria
 
 An improvement is considered successful if:
-1. `time_ns` decreases by 1%
+1. `time_ns` decreases by 0.5%
 2. All tests pass: `cargo test --all-features`
 3. No unsafe code added
 4. Code remains simple and readable
@@ -164,6 +164,6 @@ git reset --hard HEAD~1
 - **Profile-guided is better than guessing** - Use `cargo flamegraph` if needed
 - **Correctness first** - Never sacrifice correctness for speed
 - **Simple over clever** - Readable code that's fast is better than unreadable code that's slightly faster
-- **Patience** - Even 0.1% improvements compound over many iterations
+- **Patience** - Even 0.5% improvements compound over many iterations
 
 Good luck! Start simple and iterate.

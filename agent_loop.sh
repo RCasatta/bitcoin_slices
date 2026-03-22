@@ -73,7 +73,7 @@ You are in iteration $ITERATION of autonomous optimization.
 
 Current best benchmark time: $BEST_TIME nanoseconds
 
-Read the program.md file for instructions, then:
+Read the program.md file for instructions and also results.tsv for past attempts, then:
 1. Analyze the current code and identify ONE optimization opportunity
 2. Make a simple, focused change (respecting all constraints)
 3. Run tests: cargo test --all-features
