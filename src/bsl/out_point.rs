@@ -26,12 +26,17 @@ impl<'a> OutPoint<'a> {
         &self.slice[..32]
     }
     /// Returns the vout of the previous output
+    #[inline(always)]
     pub fn vout(&self) -> u32 {
-        let arr = self.slice[32..36]
-            .as_ref()
-            .try_into()
-            .expect("slice length ensured by parsing");
-        u32::from_le_bytes(arr)
+        if self.slice.len() < 36 {
+            return 0; // Should never happen due to parsing validation
+        }
+        u32::from_le_bytes([
+            self.slice[32],
+            self.slice[33],
+            self.slice[34],
+            self.slice[35],
+        ])
     }
 }
 
