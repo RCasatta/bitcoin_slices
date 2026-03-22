@@ -61,7 +61,7 @@ Repeat this cycle indefinitely:
 
 4. **Test:** Run tests to ensure correctness
    ```bash
-   cargo test --all-features
+   nix develop -c cargo test -q --all-features
    ```
 
 5. **Commit:** If tests pass, commit your change with descriptive message
@@ -89,7 +89,7 @@ Repeat this cycle indefinitely:
 ### Phase 3: Validation
 
 After every successful improvement:
-1. Run extended tests: `cargo test --all-features --release`
+1. Run extended tests: `nix develop -c cargo test -q --all-features --release`
 2. Verify no unsafe code: `grep -r "unsafe" src/`
 3. Verify no nightly features: `grep -r "#\!\[feature" src/`
 4. Check code complexity: ensure functions stay under 100 lines
@@ -118,7 +118,7 @@ Here are potential areas to explore (start simple, get more sophisticated over t
 
 An improvement is considered successful if:
 1. `time_ns` decreases by 0.5%
-2. All tests pass: `cargo test --all-features`
+2. All tests pass: `nix develop -c cargo test -q --all-features`
 3. No unsafe code added
 4. Code remains simple and readable
 5. No functions exceed 100 lines
@@ -142,14 +142,14 @@ python3 run_bench.py > baseline.json
 
 # Experiment 1: Add inline hints
 vim src/bsl/len.rs  # Add #[inline(always)] to scan_len
-cargo test --all-features  # Pass
+nix develop -c cargo test -q --all-features  # Pass
 git commit -am "Add inline hint to scan_len"
 python3 run_bench.py > result1.json
 # time_ns: 104500 (improved!) -> KEEP
 
 # Experiment 2: Optimize branch
 vim src/bsl/transaction.rs  # Reorder if conditions
-cargo test --all-features  # Pass
+nix develop -c cargo test -q --all-features  # Pass
 git commit -am "Optimize transaction branch prediction"
 python3 run_bench.py > result2.json
 # time_ns: 104600 (worse!) -> REVERT
