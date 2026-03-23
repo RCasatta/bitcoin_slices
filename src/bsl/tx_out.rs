@@ -49,13 +49,9 @@ impl<'a> AsRef<[u8]> for TxOut<'a> {
 #[cfg(feature = "redb")]
 impl<'o> redb::RedbValue for TxOut<'o> {
     // TODO fix where position once MSRV allows
-    type SelfType<'a>
-    
-    = TxOut<'a> where Self: 'a;
+    type SelfType<'a> = TxOut<'a> where Self: 'a;
 
-    type AsBytes<'a>
-    
-    = &'a [u8] where Self: 'a;
+    type AsBytes<'a> = &'a [u8] where Self: 'a;
 
     fn fixed_width() -> Option<usize> {
         None

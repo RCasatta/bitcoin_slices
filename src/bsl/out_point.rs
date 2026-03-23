@@ -37,13 +37,9 @@ impl<'a> OutPoint<'a> {
 #[cfg(feature = "redb")]
 impl<'o> redb::RedbValue for OutPoint<'o> {
     // TODO fix where position once MSRV allows
-    type SelfType<'a>
-    
-    = OutPoint<'a> where Self: 'a;
+    type SelfType<'a> = OutPoint<'a> where Self: 'a;
 
-    type AsBytes<'a>
-    
-    = &'a [u8] where Self: 'a;
+    type AsBytes<'a> = &'a [u8] where Self: 'a;
 
     fn fixed_width() -> Option<usize> {
         Some(36)
