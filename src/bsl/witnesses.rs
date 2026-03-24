@@ -21,6 +21,7 @@ impl<'a> Witnesses<'a> {
         Self::visit(slice, total_inputs, &mut crate::visit::EmptyVisitor {})
     }
     /// Visit the witnesses in the slice
+    #[inline(always)]
     pub fn visit<'b, V: crate::Visitor>(
         slice: &'a [u8],
         total_inputs: usize,

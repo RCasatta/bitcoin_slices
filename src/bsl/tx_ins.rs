@@ -12,6 +12,7 @@ pub struct TxIns<'a> {
 }
 
 impl<'a> Visit<'a> for TxIns<'a> {
+    #[inline(always)]
     fn visit<'b, V: Visitor>(slice: &'a [u8], visit: &'b mut V) -> SResult<'a, Self> {
         let mut consumed = 0;
         let total_inputs = scan_len(slice, &mut consumed)? as usize;

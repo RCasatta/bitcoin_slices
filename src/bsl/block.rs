@@ -11,6 +11,7 @@ pub struct Block<'a> {
 }
 
 impl<'a> Visit<'a> for Block<'a> {
+    #[inline(always)]
     fn visit<'b, V: Visitor>(slice: &'a [u8], visit: &'b mut V) -> SResult<'a, Self> {
         let header = BlockHeader::visit(slice, visit)?;
         let mut consumed = 0;
