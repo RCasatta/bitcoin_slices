@@ -26,10 +26,12 @@ impl<'a> Visit<'a> for Witness<'a> {
         visit.visit_witness_total_element(witness_total_element);
         for i in 0..witness_total_element {
             let len = scan_len(&slice[consumed..], &mut consumed)? as usize;
-            let witness_element = &slice
-                .get(consumed..consumed.saturating_add(len))
-                .ok_or(Error::MoreBytesNeeded)?;
-            consumed += len;
+            let end = consumed.saturating_add(len);
+            if end > slice.len() {
+                return Err(Error::MoreBytesNeeded);
+            }
+            let witness_element = &slice[consumed..end];
+            consumed = end;
             visit.visit_witness_element(i, witness_element);
         }
 
