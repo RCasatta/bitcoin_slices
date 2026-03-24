@@ -167,12 +167,12 @@ pub fn read_i32(slice: &[u8]) -> Result<i32, Error> {
 #[inline(always)]
 /// Read a u64 from a slice
 pub fn read_u64(slice: &[u8]) -> Result<u64, Error> {
-    let arr: [u8; 8] = slice
-        .get(..8)
-        .ok_or(Error::MoreBytesNeeded)?
-        .try_into()
-        .expect("slice length is 8");
-    Ok(u64::from_le_bytes(arr))
+    if slice.len() < 8 {
+        return Err(Error::MoreBytesNeeded);
+    }
+    Ok(u64::from_le_bytes([
+        slice[0], slice[1], slice[2], slice[3], slice[4], slice[5], slice[6], slice[7],
+    ]))
 }
 
 #[cfg(test)]
