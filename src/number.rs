@@ -149,23 +149,19 @@ pub fn read_u16(slice: &[u8]) -> Result<u16, Error> {
 #[inline(always)]
 /// Read a u32 from a slice
 pub fn read_u32(slice: &[u8]) -> Result<u32, Error> {
-    let arr: [u8; 4] = slice
-        .get(..4)
-        .ok_or(Error::MoreBytesNeeded)?
-        .try_into()
-        .expect("slice length is 4");
-    Ok(u32::from_le_bytes(arr))
+    if slice.len() < 4 {
+        return Err(Error::MoreBytesNeeded);
+    }
+    Ok(u32::from_le_bytes([slice[0], slice[1], slice[2], slice[3]]))
 }
 
 #[inline(always)]
 /// Read a i32 from a slice
 pub fn read_i32(slice: &[u8]) -> Result<i32, Error> {
-    let arr: [u8; 4] = slice
-        .get(..4)
-        .ok_or(Error::MoreBytesNeeded)?
-        .try_into()
-        .expect("slice length is 4");
-    Ok(i32::from_le_bytes(arr))
+    if slice.len() < 4 {
+        return Err(Error::MoreBytesNeeded);
+    }
+    Ok(i32::from_le_bytes([slice[0], slice[1], slice[2], slice[3]]))
 }
 
 #[inline(always)]
