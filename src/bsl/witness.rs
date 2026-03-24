@@ -7,6 +7,7 @@ use crate::{ParseResult, SResult, Visitor};
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Witness<'a> {
     slice: &'a [u8],
+    n: usize,
 }
 
 impl<'a> AsRef<[u8]> for Witness<'a> {
@@ -34,14 +35,16 @@ impl<'a> Visit<'a> for Witness<'a> {
 
         let witness = Witness {
             slice: &slice[..consumed],
+            n: witness_total_element,
         };
         Ok(ParseResult::new(&slice[consumed..], witness))
     }
 }
 impl<'a> Witness<'a> {
     /// If this witness contain no elements
+    #[inline(always)]
     pub fn is_empty(&self) -> bool {
-        self.slice[0] == 0
+        self.n == 0
     }
 }
 
@@ -60,6 +63,7 @@ mod test {
 
         let expected = Witness {
             slice: &witness[..],
+            n: 2,
         };
 
         assert_eq!(
