@@ -13,6 +13,7 @@ impl<'a> AsRef<[u8]> for OutPoint<'a> {
 }
 
 impl<'a> Parse<'a> for OutPoint<'a> {
+    #[inline(always)]
     /// Parse the out point from the given slice
     fn parse(slice: &'a [u8]) -> SResult<Self> {
         let (slice, remaining) = split_at_checked(slice, 36)?;

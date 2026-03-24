@@ -13,6 +13,7 @@ pub struct Script<'a> {
 }
 
 impl<'a> Parse<'a> for Script<'a> {
+    #[inline(always)]
     /// Parse a script from the slice.
     fn parse(slice: &'a [u8]) -> SResult<Self> {
         let mut consumed = 0;
