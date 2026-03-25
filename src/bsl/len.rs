@@ -60,7 +60,7 @@ pub fn scan_len(slice: &[u8], consumed: &mut usize) -> Result<u64, Error> {
                 if slice.len() < 5 {
                     return Err(Error::MoreBytesNeeded);
                 }
-                let n = u32::from_le_bytes([slice[1], slice[2], slice[3], slice[4]]) as u64;
+                let n = u32::from_le_bytes([slice[1], slice[2], slice[3], slice[4]]).into();
                 if n > u16::MAX as u64 {
                     *consumed += 5;
                     Ok(n)
@@ -72,7 +72,7 @@ pub fn scan_len(slice: &[u8], consumed: &mut usize) -> Result<u64, Error> {
                 if slice.len() < 3 {
                     return Err(Error::MoreBytesNeeded);
                 }
-                let n = u16::from_le_bytes([slice[1], slice[2]]) as u64;
+                let n = u16::from_le_bytes([slice[1], slice[2]]).into();
                 if n >= 0xFD {
                     *consumed += 3;
                     Ok(n)
