@@ -41,11 +41,8 @@ pub fn scan_len(slice: &[u8], consumed: &mut usize) -> Result<u64, Error> {
         *consumed += 1;
         Ok(*first_byte as u64)
     } else {
-        match first_byte {
-            0xFF => {
-                if slice.len() < 9 {
-                    return Err(Error::MoreBytesNeeded);
-                }
+        match (*first_byte, slice.len()) {
+            (0xFF, 9..) => {
                 let n = u64::from_le_bytes([
                     slice[1], slice[2], slice[3], slice[4], slice[5], slice[6], slice[7], slice[8],
                 ]);
@@ -56,10 +53,8 @@ pub fn scan_len(slice: &[u8], consumed: &mut usize) -> Result<u64, Error> {
                     Err(Error::NonMinimalVarInt)
                 }
             }
-            0xFE => {
-                if slice.len() < 5 {
-                    return Err(Error::MoreBytesNeeded);
-                }
+            (0xFF, _) => Err(Error::MoreBytesNeeded),
+            (0xFE, 5..) => {
                 let n = u32::from_le_bytes([slice[1], slice[2], slice[3], slice[4]]).into();
                 if n > u16::MAX as u64 {
                     *consumed += 5;
@@ -68,10 +63,8 @@ pub fn scan_len(slice: &[u8], consumed: &mut usize) -> Result<u64, Error> {
                     Err(Error::NonMinimalVarInt)
                 }
             }
-            0xFD => {
-                if slice.len() < 3 {
-                    return Err(Error::MoreBytesNeeded);
-                }
+            (0xFE, _) => Err(Error::MoreBytesNeeded),
+            (0xFD, 3..) => {
                 let n = u16::from_le_bytes([slice[1], slice[2]]).into();
                 if n >= 0xFD {
                     *consumed += 3;
@@ -80,6 +73,7 @@ pub fn scan_len(slice: &[u8], consumed: &mut usize) -> Result<u64, Error> {
                     Err(Error::NonMinimalVarInt)
                 }
             }
+            (0xFD, _) => Err(Error::MoreBytesNeeded),
             _ => unreachable!(), // Already handled < 0xFD case above
         }
     }
