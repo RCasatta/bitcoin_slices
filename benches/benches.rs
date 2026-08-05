@@ -156,9 +156,7 @@ pub fn hash_block_txs(c: &mut Criterion) {
         })
         .bench_function("slices_sha2", |b| {
             b.iter(|| {
-                struct VisitTx(
-                    Vec<sha2::digest::generic_array::GenericArray<u8, sha2::digest::typenum::U32>>,
-                );
+                struct VisitTx(Vec<sha2::digest::Output<sha2::Sha256>>);
                 let mut v = VisitTx(vec![]);
                 impl Visitor for VisitTx {
                     fn visit_block_begin(&mut self, total_transactions: usize) {

@@ -109,10 +109,7 @@ impl<'a> Transaction<'a> {
     /// Calculate the txid using the sha2 crate.
     /// NOTE: the result type is not displayed backwards when converted to string.
     #[cfg(feature = "sha2")]
-    pub fn txid_sha2(
-        &self,
-    ) -> crate::sha2::digest::generic_array::GenericArray<u8, crate::sha2::digest::typenum::U32>
-    {
+    pub fn txid_sha2(&self) -> crate::sha2::digest::Output<crate::sha2::Sha256> {
         use crate::sha2::{Digest, Sha256};
         let (a, b, c) = self.txid_preimage();
         let mut hasher = Sha256::new();
