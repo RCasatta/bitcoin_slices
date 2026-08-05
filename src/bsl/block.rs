@@ -44,10 +44,7 @@ impl<'a> Block<'a> {
     /// Calculate the block hash using the sha2 crate.
     /// NOTE: the result type is not displayed backwards when converted to string.
     #[cfg(feature = "sha2")]
-    pub fn block_hash_sha2(
-        &self,
-    ) -> crate::sha2::digest::generic_array::GenericArray<u8, crate::sha2::digest::typenum::U32>
-    {
+    pub fn block_hash_sha2(&self) -> crate::sha2::digest::Output<crate::sha2::Sha256> {
         self.header.block_hash_sha2()
     }
 

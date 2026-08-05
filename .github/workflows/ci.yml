@@ -14,6 +14,11 @@ jobs:
         with:
           toolchain: ${{ matrix.toolchain }}
       - run: cargo update -p cc --precise 1.0.28
+      # sha2 0.11 requires Rust 1.85; the committed lock resolves it so
+      # stable/nightly exercise the hardware-backend line — downgrade to
+      # the 0.10 line only for the MSRV build
+      - run: cargo update -p sha2 --precise 0.10.9
+        if: ${{ matrix.toolchain == '1.74.0' }}
 
       - run: cargo build --all-features
         if: ${{ matrix.toolchain == '1.74.0' || matrix.toolchain == 'stable' || matrix.toolchain == 'nightly' }}

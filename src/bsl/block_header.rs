@@ -83,10 +83,7 @@ impl<'a> BlockHeader<'a> {
     /// Calculate the block hash using the sha2 crate.
     /// NOTE: the result type is not displayed backwards when converted to string.
     #[cfg(feature = "sha2")]
-    pub fn block_hash_sha2(
-        &self,
-    ) -> crate::sha2::digest::generic_array::GenericArray<u8, crate::sha2::digest::typenum::U32>
-    {
+    pub fn block_hash_sha2(&self) -> crate::sha2::digest::Output<crate::sha2::Sha256> {
         use crate::sha2::{Digest, Sha256};
         let first = Sha256::digest(self.block_hash_preimage());
         Sha256::digest(&first[..])
