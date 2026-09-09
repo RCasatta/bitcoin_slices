@@ -11,8 +11,8 @@ use crate::{
 pub struct Transaction<'a> {
     slice: &'a [u8],
 
-    /// The length of the slice inlcuding all inputs and outputs of the transaction.
-    /// If some the tx is segwit
+    /// The serialized length of all inputs and outputs, including their counts.
+    /// `Some` for segwit transactions, `None` for legacy transactions.
     inputs_outputs_len: Option<NonZeroU32>,
 }
 
@@ -34,12 +34,14 @@ impl<'a> Visit<'a> for Transaction<'a> {
 
                 let _locktime = read_u32(witnesses.remaining())?;
                 let consumed = 10 + inputs.consumed() + outputs.consumed() + witnesses.consumed();
-                let inputs_outputs_len =
-                    inputs.parsed().as_ref().len() + outputs.parsed().as_ref().len();
+                let inputs_outputs_len = checked_inputs_outputs_len(
+                    inputs.parsed().as_ref().len() + outputs.parsed().as_ref().len(),
+                )?;
 
                 let tx = Transaction {
                     slice: &slice[..consumed],
-                    inputs_outputs_len: NonZeroU32::new(inputs_outputs_len as u32), // inputs_outputs_len is at least 2 bytes if both empty, they contain the compact int len
+                    // Both counts are serialized, so the length is at least two bytes.
+                    inputs_outputs_len: NonZeroU32::new(inputs_outputs_len),
                 };
                 match visit.visit_transaction(&tx) {
                     ControlFlow::Continue(_) => Ok(ParseResult::new(&slice[consumed..], tx)),
@@ -65,6 +67,11 @@ impl<'a> Visit<'a> for Transaction<'a> {
         }
     }
 }
+#[inline(always)]
+fn checked_inputs_outputs_len(len: usize) -> Result<u32, Error> {
+    u32::try_from(len).map_err(|_| Error::TransactionTooLarge)
+}
+
 impl<'a> Transaction<'a> {
     /// Returns the transaction version.
     pub fn version(&self) -> i32 {
@@ -190,6 +197,23 @@ mod test {
     use crate::{bsl::Transaction, test_common::GENESIS_TX, Parse, Visit, Visitor};
     use bitcoin::consensus::deserialize;
     use hex_lit::hex;
+
+    #[test]
+    fn inputs_outputs_length_boundary() {
+        assert_eq!(super::checked_inputs_outputs_len(2), Ok(2));
+        assert_eq!(
+            super::checked_inputs_outputs_len(u32::MAX as usize),
+            Ok(u32::MAX)
+        );
+
+        #[cfg(target_pointer_width = "64")]
+        for len in [1usize << 32, (1usize << 32) + 2, usize::MAX] {
+            assert_eq!(
+                super::checked_inputs_outputs_len(len),
+                Err(crate::Error::TransactionTooLarge)
+            );
+        }
+    }
 
     fn check_input_callbacks(bytes: &[u8], expected_inputs: usize) {
         #[derive(Default)]
