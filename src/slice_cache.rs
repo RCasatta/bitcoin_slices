@@ -5,6 +5,7 @@ use private::Range;
 
 #[derive(Debug)]
 pub enum Error {
+    EmptyValue,
     ValueLargerThanBuffer,
     ValueAlreadyPresent,
 }
@@ -112,10 +113,15 @@ impl<K: Hash + PartialEq + Eq + core::fmt::Debug> SliceCache<K> {
 
     /// Insert a value V in the cache, with key K
     /// returns the number of old entries removed
+    ///
+    /// Empty values are rejected with [`Error::EmptyValue`].
     pub fn insert<V: AsRef<[u8]>>(&mut self, key: K, value: &V) -> Result<usize, Error> {
         let value: &[u8] = value.as_ref();
         let mut removed = 0;
 
+        if value.is_empty() {
+            return Err(Error::EmptyValue);
+        }
         if self.indexes.get(&key).is_some() {
             return Err(Error::ValueAlreadyPresent);
         }
@@ -207,7 +213,7 @@ impl<K: Hash + PartialEq + Eq + core::fmt::Debug> SliceCache<K> {
                 .indexes
                 .get(back)
                 .expect("if in insertion, must be in indexes");
-            if range_to_remove.overlaps(&range) {
+            if range_to_remove.overlaps(range) {
                 self.indexes.remove(back).expect("must be found");
                 self.insertions.pop_back().expect("must be found");
                 removed += 1;
@@ -385,6 +391,42 @@ mod tests {
         assert_eq!(cache.get(&k1), None);
         assert_eq!(cache.get(&k2), Some(&v2[..]));
         assert_eq!(cache.len(), 1);
+    }
+
+    #[test]
+    fn empty_values_are_rejected_without_changing_cache() {
+        let mut cache = SliceCache::new(10);
+        assert!(matches!(cache.insert(0, &[]), Err(Error::EmptyValue)));
+        assert_eq!(cache.len(), 0);
+
+        cache.insert(0, &[0; 6]).unwrap();
+        cache.insert(1, &[1; 4]).unwrap();
+        for key in [0, 2] {
+            assert!(matches!(cache.insert(key, &[]), Err(Error::EmptyValue)));
+        }
+        assert_eq!(cache.len(), 2);
+        assert_eq!(cache.get(&0), Some(&[0; 6][..]));
+        assert_eq!(cache.get(&1), Some(&[1; 4][..]));
+        assert_eq!(cache.get(&2), None);
+        assert!(!cache.full());
+
+        assert_eq!(cache.insert(2, &[2]).unwrap(), 1);
+        assert_eq!(cache.get(&0), None);
+        assert_eq!(cache.get(&1), Some(&[1; 4][..]));
+        assert_eq!(cache.get(&2), Some(&[2][..]));
+        assert_eq!(cache.len(), 2);
+    }
+
+    #[test]
+    fn zero_capacity_cache_rejects_all_values() {
+        let mut cache = SliceCache::new(0);
+        assert!(matches!(cache.insert(0, &[]), Err(Error::EmptyValue)));
+        assert!(matches!(
+            cache.insert(0, &[1]),
+            Err(Error::ValueLargerThanBuffer)
+        ));
+        assert_eq!(cache.len(), 0);
+        assert_eq!(cache.get(&0), None);
     }
 
     #[test]
