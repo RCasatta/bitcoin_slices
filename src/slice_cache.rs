@@ -140,13 +140,11 @@ impl<K: Hash + PartialEq + Eq + core::fmt::Debug> SliceCache<K> {
         self.free_pointer = end;
 
         let inserted_range = Range::from_begin_len(begin, value.len());
+        // Evict old entries before indexing the new one so it cannot evict itself.
+        removed += self.remove_range(&inserted_range);
         let key = Arc::new(key);
-        self.indexes.insert(key.clone(), inserted_range.clone());
+        self.indexes.insert(key.clone(), inserted_range);
         self.insertions.push_front(key);
-
-        if self.insertions.len() > 1 {
-            removed += self.remove_range(&inserted_range)
-        }
 
         Ok(removed)
     }
@@ -383,6 +381,32 @@ mod tests {
 
         let k2 = 1;
         let v2 = [0];
-        cache.insert(k2, &v2).unwrap();
+        assert_eq!(cache.insert(k2, &v2).unwrap(), 1);
+        assert_eq!(cache.get(&k1), None);
+        assert_eq!(cache.get(&k2), Some(&v2[..]));
+        assert_eq!(cache.len(), 1);
+    }
+
+    #[test]
+    fn insert_overwrites_all_entries_after_multiple_wraps() {
+        let mut cache = SliceCache::new(10);
+        for (key, size) in [3, 3, 3, 2, 5, 3, 4, 4].into_iter().enumerate() {
+            cache.insert(key, &vec![key as u8; size]).unwrap();
+        }
+        assert_eq!(cache.len(), 2);
+
+        let value = [8; 7];
+        assert_eq!(cache.insert(8, &value).unwrap(), 2);
+        for key in 0..8 {
+            assert_eq!(cache.get(&key), None);
+        }
+        assert_eq!(cache.get(&8), Some(&value[..]));
+        assert_eq!(cache.len(), 1);
+
+        // The insertion order remains usable after all older entries were evicted.
+        assert_eq!(cache.insert(9, &[9; 3]).unwrap(), 0);
+        assert_eq!(cache.get(&8), Some(&value[..]));
+        assert_eq!(cache.get(&9), Some(&[9; 3][..]));
+        assert_eq!(cache.len(), 2);
     }
 }
