@@ -10,7 +10,7 @@ pub struct Witness<'a> {
     n: usize,
 }
 
-impl<'a> AsRef<[u8]> for Witness<'a> {
+impl AsRef<[u8]> for Witness<'_> {
     fn as_ref(&self) -> &[u8] {
         self.slice
     }
@@ -42,7 +42,7 @@ impl<'a> Visit<'a> for Witness<'a> {
         Ok(ParseResult::new(&slice[consumed..], witness))
     }
 }
-impl<'a> Witness<'a> {
+impl Witness<'_> {
     /// If this witness contain no elements
     #[inline(always)]
     pub fn is_empty(&self) -> bool {

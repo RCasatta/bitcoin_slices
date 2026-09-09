@@ -39,7 +39,7 @@ impl<'a> Visit<'a> for BlockHeader<'a> {
     }
 }
 
-impl<'a> BlockHeader<'a> {
+impl BlockHeader<'_> {
     /// Returns the block header version.
     pub fn version(&self) -> i32 {
         self.version
@@ -93,7 +93,7 @@ impl<'a> BlockHeader<'a> {
     }
 }
 
-impl<'a> AsRef<[u8]> for BlockHeader<'a> {
+impl AsRef<[u8]> for BlockHeader<'_> {
     fn as_ref(&self) -> &[u8] {
         self.slice
     }

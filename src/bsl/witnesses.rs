@@ -9,7 +9,7 @@ pub struct Witnesses<'a> {
     slice: &'a [u8],
     all_empty: bool,
 }
-impl<'a> AsRef<[u8]> for Witnesses<'a> {
+impl AsRef<[u8]> for Witnesses<'_> {
     fn as_ref(&self) -> &[u8] {
         self.slice
     }
@@ -17,7 +17,7 @@ impl<'a> AsRef<[u8]> for Witnesses<'a> {
 
 impl<'a> Witnesses<'a> {
     /// Parse the witnesses in the slice
-    pub fn parse(slice: &'a [u8], total_inputs: usize) -> SResult<Self> {
+    pub fn parse(slice: &'a [u8], total_inputs: usize) -> SResult<'a, Self> {
         Self::visit(slice, total_inputs, &mut crate::visit::EmptyVisitor {})
     }
     /// Visit the witnesses in the slice

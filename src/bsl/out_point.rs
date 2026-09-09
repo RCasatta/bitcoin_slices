@@ -6,7 +6,7 @@ pub struct OutPoint<'a> {
     slice: &'a [u8],
 }
 
-impl<'a> AsRef<[u8]> for OutPoint<'a> {
+impl AsRef<[u8]> for OutPoint<'_> {
     fn as_ref(&self) -> &[u8] {
         self.slice
     }
@@ -15,12 +15,12 @@ impl<'a> AsRef<[u8]> for OutPoint<'a> {
 impl<'a> Parse<'a> for OutPoint<'a> {
     #[inline(always)]
     /// Parse the out point from the given slice
-    fn parse(slice: &'a [u8]) -> SResult<Self> {
+    fn parse(slice: &'a [u8]) -> SResult<'a, Self> {
         let (slice, remaining) = split_at_checked(slice, 36)?;
         Ok(ParseResult::new(remaining, OutPoint { slice }))
     }
 }
-impl<'a> OutPoint<'a> {
+impl OutPoint<'_> {
     /// Returns the transaction txid of the previous output
     pub fn txid(&self) -> &[u8] {
         &self.slice[..32]
@@ -38,9 +38,15 @@ impl<'a> OutPoint<'a> {
 #[cfg(feature = "redb")]
 impl<'o> redb::RedbValue for OutPoint<'o> {
     // TODO fix where position once MSRV allows
-    type SelfType<'a> = OutPoint<'a> where Self: 'a;
+    type SelfType<'a>
+        = OutPoint<'a>
+    where
+        Self: 'a;
 
-    type AsBytes<'a> = &'a [u8] where Self: 'a;
+    type AsBytes<'a>
+        = &'a [u8]
+    where
+        Self: 'a;
 
     fn fixed_width() -> Option<usize> {
         Some(36)
