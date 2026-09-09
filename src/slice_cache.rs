@@ -194,9 +194,18 @@ impl<K: Hash + PartialEq + Eq + core::fmt::Debug> SliceCache<K> {
         self.indexes.len()
     }
 
-    /// Return the average size of the elements contained in the cache
+    /// Return the average serialized size in bytes of the elements contained in the cache.
+    /// Returns `0.0` when empty. Computing the average visits every cached entry.
     pub fn avg(&self) -> f64 {
-        self.buffer.len() as f64 / self.indexes.len() as f64
+        if self.indexes.is_empty() {
+            return 0.0;
+        }
+        let stored_bytes: usize = self
+            .indexes
+            .values()
+            .map(|range| range.end() - range.begin())
+            .sum();
+        stored_bytes as f64 / self.indexes.len() as f64
     }
 
     /// Return wether the cache filled the inner buffer of serialized object and removed at least
@@ -375,6 +384,33 @@ mod tests {
         let val = cache.get_value::<Transaction>(&txid).unwrap();
 
         assert_eq!(val.as_ref(), segwit_tx);
+    }
+
+    #[test]
+    fn average_is_zero_when_empty() {
+        assert_eq!(SliceCache::<u8>::new(0).avg(), 0.0);
+        assert_eq!(SliceCache::<u8>::new(10).avg(), 0.0);
+    }
+
+    #[test]
+    fn average_tracks_stored_values() {
+        let mut cache = SliceCache::new(10);
+        cache.insert(0, &[0; 3]).unwrap();
+        assert_eq!(cache.avg(), 3.0);
+        cache.insert(1, &[1; 2]).unwrap();
+        assert_eq!(cache.avg(), 2.5);
+        cache.insert(2, &[2; 4]).unwrap();
+        assert_eq!(cache.avg(), 3.0);
+
+        assert_eq!(cache.insert(3, &[3; 4]).unwrap(), 2);
+        assert_eq!(cache.avg(), 4.0);
+        assert_eq!(cache.insert(4, &[4; 3]).unwrap(), 1);
+        assert_eq!(cache.avg(), 3.5);
+
+        assert!(cache.insert(4, &[4; 3]).is_err());
+        assert!(cache.insert(5, &[5; 11]).is_err());
+        assert!(cache.insert(5, &[]).is_err());
+        assert_eq!(cache.avg(), 3.5);
     }
 
     #[test]
