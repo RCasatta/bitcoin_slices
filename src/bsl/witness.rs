@@ -1,4 +1,4 @@
-use super::scan_len;
+use super::len::scan_len_usize;
 use crate::{Error, Visit};
 use crate::{ParseResult, SResult, Visitor};
 
@@ -20,12 +20,11 @@ impl<'a> Visit<'a> for Witness<'a> {
     #[inline(always)]
     fn visit<'b, V: Visitor>(slice: &'a [u8], visit: &'b mut V) -> SResult<'a, Witness<'a>> {
         let mut consumed = 0usize;
-        let n = scan_len(slice, &mut consumed)?;
-        let witness_total_element = n as usize;
+        let witness_total_element = scan_len_usize(slice, &mut consumed)?;
 
         visit.visit_witness_total_element(witness_total_element);
         for i in 0..witness_total_element {
-            let len = scan_len(&slice[consumed..], &mut consumed)? as usize;
+            let len = scan_len_usize(&slice[consumed..], &mut consumed)?;
             let end = consumed.saturating_add(len);
             if end > slice.len() {
                 return Err(Error::MoreBytesNeeded);
