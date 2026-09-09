@@ -1,6 +1,6 @@
 use core::ops::ControlFlow;
 
-use super::len::scan_len;
+use super::len::scan_len_usize;
 use crate::bsl::TxOut;
 use crate::{Parse, ParseResult, SResult, Visit, Visitor};
 
@@ -15,7 +15,7 @@ impl<'a> Visit<'a> for TxOuts<'a> {
     #[inline(always)]
     fn visit<'b, V: Visitor>(slice: &'a [u8], visit: &'b mut V) -> SResult<'a, Self> {
         let mut consumed = 0;
-        let total_outputs = scan_len(slice, &mut consumed)? as usize;
+        let total_outputs = scan_len_usize(slice, &mut consumed)?;
         visit.visit_tx_outs(total_outputs);
 
         for i in 0..total_outputs {
@@ -51,7 +51,7 @@ impl<'a> TxOuts<'a> {
     /// in a db.
     pub fn iter(&self) -> TxOutIterator<'_> {
         let mut consumed = 0;
-        let len = scan_len(self.slice, &mut consumed).expect("len granted by parsing") as usize;
+        let len = scan_len_usize(self.slice, &mut consumed).expect("len granted by parsing");
         TxOutIterator {
             elements: len,
             offset: consumed,
@@ -90,6 +90,7 @@ impl<'a> Iterator for TxOutIterator<'a> {
             let tx_out =
                 TxOut::parse(&self.tx_outs.slice[self.offset..]).expect("granted from parsing");
             self.offset += tx_out.consumed();
+            self.elements -= 1;
             Some(tx_out.parsed_owned())
         }
     }
@@ -122,7 +123,7 @@ impl<'o> redb::RedbValue for TxOuts<'o> {
     where
         Self: 'a,
     {
-        let n = scan_len(&data, &mut 0).expect("inserted data is not a valid TxOuts") as usize;
+        let n = scan_len_usize(data, &mut 0).expect("inserted data is not a valid TxOuts");
         TxOuts { slice: data, n }
     }
 
@@ -215,6 +216,22 @@ mod test {
         let mut visitor = IsMine(vec![1u8], false);
         let _ = TxOuts::visit(&tx_outs, &mut visitor);
         assert!(!visitor.1);
+    }
+
+    #[test]
+    fn iterator_tracks_remaining_outputs() {
+        for bytes in [vec![0], tx_outs_bytes()] {
+            let tx_outs = TxOuts::parse(&bytes).unwrap().parsed_owned();
+            let mut iter = tx_outs.iter();
+            for remaining in (0..=tx_outs.n()).rev() {
+                assert_eq!(iter.len(), remaining);
+                assert_eq!(iter.size_hint(), (remaining, Some(remaining)));
+                assert_eq!(iter.next().is_some(), remaining > 0);
+            }
+            assert!(iter.next().is_none());
+            assert_eq!(iter.len(), 0);
+            assert_eq!(iter.size_hint(), (0, Some(0)));
+        }
     }
 
     #[test]

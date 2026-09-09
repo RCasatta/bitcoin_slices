@@ -5,6 +5,7 @@ use private::Range;
 
 #[derive(Debug)]
 pub enum Error {
+    EmptyValue,
     ValueLargerThanBuffer,
     ValueAlreadyPresent,
 }
@@ -112,10 +113,15 @@ impl<K: Hash + PartialEq + Eq + core::fmt::Debug> SliceCache<K> {
 
     /// Insert a value V in the cache, with key K
     /// returns the number of old entries removed
+    ///
+    /// Empty values are rejected with [`Error::EmptyValue`].
     pub fn insert<V: AsRef<[u8]>>(&mut self, key: K, value: &V) -> Result<usize, Error> {
         let value: &[u8] = value.as_ref();
         let mut removed = 0;
 
+        if value.is_empty() {
+            return Err(Error::EmptyValue);
+        }
         if self.indexes.get(&key).is_some() {
             return Err(Error::ValueAlreadyPresent);
         }
@@ -140,13 +146,11 @@ impl<K: Hash + PartialEq + Eq + core::fmt::Debug> SliceCache<K> {
         self.free_pointer = end;
 
         let inserted_range = Range::from_begin_len(begin, value.len());
+        // Evict old entries before indexing the new one so it cannot evict itself.
+        removed += self.remove_range(&inserted_range);
         let key = Arc::new(key);
-        self.indexes.insert(key.clone(), inserted_range.clone());
+        self.indexes.insert(key.clone(), inserted_range);
         self.insertions.push_front(key);
-
-        if self.insertions.len() > 1 {
-            removed += self.remove_range(&inserted_range)
-        }
 
         Ok(removed)
     }
@@ -190,9 +194,18 @@ impl<K: Hash + PartialEq + Eq + core::fmt::Debug> SliceCache<K> {
         self.indexes.len()
     }
 
-    /// Return the average size of the elements contained in the cache
+    /// Return the average serialized size in bytes of the elements contained in the cache.
+    /// Returns `0.0` when empty. Computing the average visits every cached entry.
     pub fn avg(&self) -> f64 {
-        self.buffer.len() as f64 / self.indexes.len() as f64
+        if self.indexes.is_empty() {
+            return 0.0;
+        }
+        let stored_bytes: usize = self
+            .indexes
+            .values()
+            .map(|range| range.end() - range.begin())
+            .sum();
+        stored_bytes as f64 / self.indexes.len() as f64
     }
 
     /// Return wether the cache filled the inner buffer of serialized object and removed at least
@@ -209,7 +222,7 @@ impl<K: Hash + PartialEq + Eq + core::fmt::Debug> SliceCache<K> {
                 .indexes
                 .get(back)
                 .expect("if in insertion, must be in indexes");
-            if range_to_remove.overlaps(&range) {
+            if range_to_remove.overlaps(range) {
                 self.indexes.remove(back).expect("must be found");
                 self.insertions.pop_back().expect("must be found");
                 removed += 1;
@@ -374,6 +387,33 @@ mod tests {
     }
 
     #[test]
+    fn average_is_zero_when_empty() {
+        assert_eq!(SliceCache::<u8>::new(0).avg(), 0.0);
+        assert_eq!(SliceCache::<u8>::new(10).avg(), 0.0);
+    }
+
+    #[test]
+    fn average_tracks_stored_values() {
+        let mut cache = SliceCache::new(10);
+        cache.insert(0, &[0; 3]).unwrap();
+        assert_eq!(cache.avg(), 3.0);
+        cache.insert(1, &[1; 2]).unwrap();
+        assert_eq!(cache.avg(), 2.5);
+        cache.insert(2, &[2; 4]).unwrap();
+        assert_eq!(cache.avg(), 3.0);
+
+        assert_eq!(cache.insert(3, &[3; 4]).unwrap(), 2);
+        assert_eq!(cache.avg(), 4.0);
+        assert_eq!(cache.insert(4, &[4; 3]).unwrap(), 1);
+        assert_eq!(cache.avg(), 3.5);
+
+        assert!(cache.insert(4, &[4; 3]).is_err());
+        assert!(cache.insert(5, &[5; 11]).is_err());
+        assert!(cache.insert(5, &[]).is_err());
+        assert_eq!(cache.avg(), 3.5);
+    }
+
+    #[test]
     fn insert_when_buffer_exactly_full() {
         let mut cache = SliceCache::new(10);
 
@@ -383,6 +423,68 @@ mod tests {
 
         let k2 = 1;
         let v2 = [0];
-        cache.insert(k2, &v2).unwrap();
+        assert_eq!(cache.insert(k2, &v2).unwrap(), 1);
+        assert_eq!(cache.get(&k1), None);
+        assert_eq!(cache.get(&k2), Some(&v2[..]));
+        assert_eq!(cache.len(), 1);
+    }
+
+    #[test]
+    fn empty_values_are_rejected_without_changing_cache() {
+        let mut cache = SliceCache::new(10);
+        assert!(matches!(cache.insert(0, &[]), Err(Error::EmptyValue)));
+        assert_eq!(cache.len(), 0);
+
+        cache.insert(0, &[0; 6]).unwrap();
+        cache.insert(1, &[1; 4]).unwrap();
+        for key in [0, 2] {
+            assert!(matches!(cache.insert(key, &[]), Err(Error::EmptyValue)));
+        }
+        assert_eq!(cache.len(), 2);
+        assert_eq!(cache.get(&0), Some(&[0; 6][..]));
+        assert_eq!(cache.get(&1), Some(&[1; 4][..]));
+        assert_eq!(cache.get(&2), None);
+        assert!(!cache.full());
+
+        assert_eq!(cache.insert(2, &[2]).unwrap(), 1);
+        assert_eq!(cache.get(&0), None);
+        assert_eq!(cache.get(&1), Some(&[1; 4][..]));
+        assert_eq!(cache.get(&2), Some(&[2][..]));
+        assert_eq!(cache.len(), 2);
+    }
+
+    #[test]
+    fn zero_capacity_cache_rejects_all_values() {
+        let mut cache = SliceCache::new(0);
+        assert!(matches!(cache.insert(0, &[]), Err(Error::EmptyValue)));
+        assert!(matches!(
+            cache.insert(0, &[1]),
+            Err(Error::ValueLargerThanBuffer)
+        ));
+        assert_eq!(cache.len(), 0);
+        assert_eq!(cache.get(&0), None);
+    }
+
+    #[test]
+    fn insert_overwrites_all_entries_after_multiple_wraps() {
+        let mut cache = SliceCache::new(10);
+        for (key, size) in [3, 3, 3, 2, 5, 3, 4, 4].into_iter().enumerate() {
+            cache.insert(key, &vec![key as u8; size]).unwrap();
+        }
+        assert_eq!(cache.len(), 2);
+
+        let value = [8; 7];
+        assert_eq!(cache.insert(8, &value).unwrap(), 2);
+        for key in 0..8 {
+            assert_eq!(cache.get(&key), None);
+        }
+        assert_eq!(cache.get(&8), Some(&value[..]));
+        assert_eq!(cache.len(), 1);
+
+        // The insertion order remains usable after all older entries were evicted.
+        assert_eq!(cache.insert(9, &[9; 3]).unwrap(), 0);
+        assert_eq!(cache.get(&8), Some(&value[..]));
+        assert_eq!(cache.get(&9), Some(&[9; 3][..]));
+        assert_eq!(cache.len(), 2);
     }
 }

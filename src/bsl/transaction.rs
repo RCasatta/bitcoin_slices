@@ -11,8 +11,8 @@ use crate::{
 pub struct Transaction<'a> {
     slice: &'a [u8],
 
-    /// The length of the slice inlcuding all inputs and outputs of the transaction.
-    /// If some the tx is segwit
+    /// The serialized length of all inputs and outputs, including their counts.
+    /// `Some` for segwit transactions, `None` for legacy transactions.
     inputs_outputs_len: Option<NonZeroU32>,
 }
 
@@ -20,11 +20,11 @@ impl<'a> Visit<'a> for Transaction<'a> {
     #[inline(always)]
     fn visit<'b, V: Visitor>(slice: &'a [u8], visit: &'b mut V) -> SResult<'a, Self> {
         let _version = read_i32(slice)?;
-        let inputs = TxIns::visit(&slice[4..], visit)?;
-        if inputs.parsed().is_empty() {
-            let segwit_flag = read_u8(inputs.remaining())?;
+        // A zero byte is the segwit marker, not an input-count callback.
+        if read_u8(&slice[4..])? == 0 {
+            let segwit_flag = read_u8(&slice[5..])?;
             if segwit_flag == 1 {
-                let inputs = TxIns::visit(&inputs.remaining()[1..], visit)?;
+                let inputs = TxIns::visit(&slice[6..], visit)?;
                 let outputs = TxOuts::visit(inputs.remaining(), visit)?;
                 let witnesses = Witnesses::visit(outputs.remaining(), inputs.parsed().n(), visit)?;
 
@@ -34,12 +34,14 @@ impl<'a> Visit<'a> for Transaction<'a> {
 
                 let _locktime = read_u32(witnesses.remaining())?;
                 let consumed = 10 + inputs.consumed() + outputs.consumed() + witnesses.consumed();
-                let inputs_outputs_len =
-                    inputs.parsed().as_ref().len() + outputs.parsed().as_ref().len();
+                let inputs_outputs_len = checked_inputs_outputs_len(
+                    inputs.parsed().as_ref().len() + outputs.parsed().as_ref().len(),
+                )?;
 
                 let tx = Transaction {
                     slice: &slice[..consumed],
-                    inputs_outputs_len: NonZeroU32::new(inputs_outputs_len as u32), // inputs_outputs_len is at least 2 bytes if both empty, they contain the compact int len
+                    // Both counts are serialized, so the length is at least two bytes.
+                    inputs_outputs_len: NonZeroU32::new(inputs_outputs_len),
                 };
                 match visit.visit_transaction(&tx) {
                     ControlFlow::Continue(_) => Ok(ParseResult::new(&slice[consumed..], tx)),
@@ -49,6 +51,7 @@ impl<'a> Visit<'a> for Transaction<'a> {
                 Err(Error::UnknownSegwitFlag(segwit_flag))
             }
         } else {
+            let inputs = TxIns::visit(&slice[4..], visit)?;
             let outputs = TxOuts::visit(inputs.remaining(), visit)?;
             let _locktime = read_u32(outputs.remaining())?;
             let consumed = inputs.consumed() + outputs.consumed() + 8;
@@ -64,6 +67,11 @@ impl<'a> Visit<'a> for Transaction<'a> {
         }
     }
 }
+#[inline(always)]
+fn checked_inputs_outputs_len(len: usize) -> Result<u32, Error> {
+    u32::try_from(len).map_err(|_| Error::TransactionTooLarge)
+}
+
 impl<'a> Transaction<'a> {
     /// Returns the transaction version.
     pub fn version(&self) -> i32 {
@@ -186,12 +194,59 @@ impl<'o> redb::RedbValue for Transaction<'o> {
 
 #[cfg(test)]
 mod test {
-    use crate::{bsl::Transaction, test_common::GENESIS_TX, Parse};
+    use crate::{bsl::Transaction, test_common::GENESIS_TX, Parse, Visit, Visitor};
     use bitcoin::consensus::deserialize;
     use hex_lit::hex;
 
     #[test]
+    fn inputs_outputs_length_boundary() {
+        assert_eq!(super::checked_inputs_outputs_len(2), Ok(2));
+        assert_eq!(
+            super::checked_inputs_outputs_len(u32::MAX as usize),
+            Ok(u32::MAX)
+        );
+
+        #[cfg(target_pointer_width = "64")]
+        for len in [1usize << 32, (1usize << 32) + 2, usize::MAX] {
+            assert_eq!(
+                super::checked_inputs_outputs_len(len),
+                Err(crate::Error::TransactionTooLarge)
+            );
+        }
+    }
+
+    fn check_input_callbacks(bytes: &[u8], expected_inputs: usize) {
+        #[derive(Default)]
+        struct InputVisitor {
+            counts: Vec<usize>,
+            inputs: usize,
+        }
+        impl Visitor for InputVisitor {
+            fn visit_tx_ins(&mut self, total_inputs: usize) {
+                self.counts.push(total_inputs);
+            }
+
+            fn visit_tx_in(
+                &mut self,
+                vin: usize,
+                _tx_in: &crate::bsl::TxIn,
+            ) -> core::ops::ControlFlow<()> {
+                assert_eq!(self.counts.len(), 1);
+                assert_eq!(vin, self.inputs);
+                self.inputs += 1;
+                core::ops::ControlFlow::Continue(())
+            }
+        }
+        let mut visitor = InputVisitor::default();
+        let parsed = Transaction::visit(bytes, &mut visitor).unwrap();
+        assert!(parsed.remaining().is_empty());
+        assert_eq!(visitor.counts, [expected_inputs]);
+        assert_eq!(visitor.inputs, expected_inputs);
+    }
+
+    #[test]
     fn parse_genesis_transaction() {
+        check_input_callbacks(&GENESIS_TX, 1);
         let tx = Transaction::parse(&GENESIS_TX[..]).unwrap();
         assert_eq!(tx.remaining(), &[][..]);
         assert_eq!(tx.parsed().as_ref(), &GENESIS_TX[..]);
@@ -209,6 +264,7 @@ mod test {
     fn parse_segwit_transaction() {
         let segwit_tx = hex!("010000000001010000000000000000000000000000000000000000000000000000000000000000ffffffff3603da1b0e00045503bd5704c7dd8a0d0ced13bb5785010800000000000a636b706f6f6c122f4e696e6a61506f6f6c2f5345475749542fffffffff02b4e5a212000000001976a914876fbb82ec05caa6af7a3b5e5a983aae6c6cc6d688ac0000000000000000266a24aa21a9edf91c46b49eb8a29089980f02ee6b57e7d63d33b18b4fddac2bcd7db2a39837040120000000000000000000000000000000000000000000000000000000000000000000000000");
         let tx = Transaction::parse(&segwit_tx[..]).unwrap();
+        check_input_callbacks(&segwit_tx, 1);
         assert_eq!(tx.remaining(), &[]);
         assert_eq!(tx.parsed().as_ref(), &segwit_tx[..]);
         assert_eq!(tx.consumed(), 222);
@@ -218,6 +274,29 @@ mod test {
         check_hash(
             tx.parsed(),
             hex!("4be105f158ea44aec57bf12c5817d073a712ab131df6f37786872cfc70734188"), // testnet tx
+        );
+    }
+
+    #[test]
+    fn visit_empty_segwit_inputs() {
+        check_input_callbacks(&hex!("010000000001000000000000"), 0);
+    }
+
+    #[test]
+    fn parse_transaction_marker_errors() {
+        for bytes in [&[][..], &hex!("01000000"), &hex!("0100000000")] {
+            assert_eq!(
+                Transaction::parse(bytes),
+                Err(crate::Error::MoreBytesNeeded)
+            );
+        }
+        assert_eq!(
+            Transaction::parse(&hex!("010000000002")),
+            Err(crate::Error::UnknownSegwitFlag(2))
+        );
+        assert_eq!(
+            Transaction::parse(&hex!("01000000fd0000")),
+            Err(crate::Error::NonMinimalVarInt)
         );
     }
 

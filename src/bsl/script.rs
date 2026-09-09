@@ -1,4 +1,4 @@
-use super::scan_len;
+use super::len::scan_len_usize;
 use crate::{slice::split_at_checked, Parse, ParseResult, SResult};
 
 /// The Script, this type could be found in transaction outputs as `script_pubkey` or in transaction
@@ -17,7 +17,7 @@ impl<'a> Parse<'a> for Script<'a> {
     /// Parse a script from the slice.
     fn parse(slice: &'a [u8]) -> SResult<Self> {
         let mut consumed = 0;
-        let n = scan_len(slice, &mut consumed)? as usize;
+        let n = scan_len_usize(slice, &mut consumed)?;
         let (script_bytes, remaining) = split_at_checked(slice, consumed.saturating_add(n))?;
         Ok(ParseResult::new(
             remaining,
