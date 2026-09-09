@@ -90,6 +90,7 @@ impl<'a> Iterator for TxOutIterator<'a> {
             let tx_out =
                 TxOut::parse(&self.tx_outs.slice[self.offset..]).expect("granted from parsing");
             self.offset += tx_out.consumed();
+            self.elements -= 1;
             Some(tx_out.parsed_owned())
         }
     }
@@ -215,6 +216,22 @@ mod test {
         let mut visitor = IsMine(vec![1u8], false);
         let _ = TxOuts::visit(&tx_outs, &mut visitor);
         assert!(!visitor.1);
+    }
+
+    #[test]
+    fn iterator_tracks_remaining_outputs() {
+        for bytes in [vec![0], tx_outs_bytes()] {
+            let tx_outs = TxOuts::parse(&bytes).unwrap().parsed_owned();
+            let mut iter = tx_outs.iter();
+            for remaining in (0..=tx_outs.n()).rev() {
+                assert_eq!(iter.len(), remaining);
+                assert_eq!(iter.size_hint(), (remaining, Some(remaining)));
+                assert_eq!(iter.next().is_some(), remaining > 0);
+            }
+            assert!(iter.next().is_none());
+            assert_eq!(iter.len(), 0);
+            assert_eq!(iter.size_hint(), (0, Some(0)));
+        }
     }
 
     #[test]
