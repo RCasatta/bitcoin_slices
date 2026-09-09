@@ -85,6 +85,12 @@ pub fn scan_len(slice: &[u8], consumed: &mut usize) -> Result<u64, Error> {
     }
 }
 
+/// Decode a count or length that must fit in an addressable slice.
+#[inline(always)]
+pub(crate) fn scan_len_usize(slice: &[u8], consumed: &mut usize) -> Result<usize, Error> {
+    usize::try_from(scan_len(slice, consumed)?).map_err(|_| Error::MoreBytesNeeded)
+}
+
 impl Len {
     /// The value encoded in this compact int
     pub fn n(&self) -> u64 {
@@ -108,6 +114,55 @@ mod test {
     use super::parse_len;
     use super::scan_len;
     use crate::{bsl::Len, Error};
+
+    #[test]
+    fn oversized_lengths_are_rejected_by_parsers() {
+        use crate::{
+            bsl::{Block, Script, TxIns, TxOuts, Witness},
+            Parse,
+        };
+
+        for length in [1u64 << 32, (1u64 << 32) + 1, u64::MAX] {
+            let mut bytes = vec![0xff];
+            bytes.extend(length.to_le_bytes());
+            // Enough bytes for a small count produced by a truncating conversion.
+            bytes.extend([0; 100]);
+            assert_eq!(Script::parse(&bytes), Err(Error::MoreBytesNeeded));
+            assert_eq!(TxIns::parse(&bytes), Err(Error::MoreBytesNeeded));
+            assert_eq!(TxOuts::parse(&bytes), Err(Error::MoreBytesNeeded));
+            assert_eq!(Witness::parse(&bytes), Err(Error::MoreBytesNeeded));
+
+            let mut block = vec![0; 80];
+            block.extend(&bytes[..9]);
+            block.extend(crate::test_common::GENESIS_TX);
+            assert_eq!(Block::parse(&block), Err(Error::MoreBytesNeeded));
+
+            let mut witness = vec![1];
+            witness.extend(&bytes);
+            assert_eq!(Witness::parse(&witness), Err(Error::MoreBytesNeeded));
+        }
+    }
+
+    #[test]
+    fn scan_length_respects_pointer_width() {
+        for length in [0xfc, 0xfd, u32::MAX as u64] {
+            let bytes = bitcoin::consensus::serialize(&bitcoin::VarInt(length));
+            let mut consumed = 0;
+            assert_eq!(
+                super::scan_len_usize(&bytes, &mut consumed),
+                Ok(length as usize)
+            );
+            assert_eq!(consumed, bytes.len());
+        }
+        for length in [1u64 << 32, u64::MAX] {
+            let bytes = bitcoin::consensus::serialize(&bitcoin::VarInt(length));
+            let result = super::scan_len_usize(&bytes, &mut 0);
+            #[cfg(target_pointer_width = "32")]
+            assert_eq!(result, Err(Error::MoreBytesNeeded));
+            #[cfg(target_pointer_width = "64")]
+            assert_eq!(result, Ok(length as usize));
+        }
+    }
 
     #[test]
     fn test_parse_len() {
