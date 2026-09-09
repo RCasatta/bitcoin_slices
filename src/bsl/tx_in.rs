@@ -15,7 +15,7 @@ pub struct TxIn<'a> {
 
 impl<'a> Parse<'a> for TxIn<'a> {
     #[inline(always)]
-    fn parse(slice: &'a [u8]) -> SResult<Self> {
+    fn parse(slice: &'a [u8]) -> SResult<'a, Self> {
         let out_point = OutPoint::parse(slice)?;
         let script = Script::parse(out_point.remaining())?;
         let sequence = read_u32(script.remaining())?;
@@ -29,7 +29,7 @@ impl<'a> Parse<'a> for TxIn<'a> {
         Ok(ParseResult::new(&slice[consumed..], tx_in))
     }
 }
-impl<'a> TxIn<'a> {
+impl TxIn<'_> {
     /// Returns the previous output index spent by this transaction input
     pub fn prevout(&self) -> &OutPoint {
         &self.prevout
@@ -44,7 +44,7 @@ impl<'a> TxIn<'a> {
     }
 }
 
-impl<'a> AsRef<[u8]> for TxIn<'a> {
+impl AsRef<[u8]> for TxIn<'_> {
     fn as_ref(&self) -> &[u8] {
         self.slice
     }

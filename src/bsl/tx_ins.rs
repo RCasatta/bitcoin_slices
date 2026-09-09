@@ -34,7 +34,7 @@ impl<'a> Visit<'a> for TxIns<'a> {
         ))
     }
 }
-impl<'a> TxIns<'a> {
+impl TxIns<'_> {
     /// Returns if there are no transaction inputs
     #[inline(always)]
     pub fn is_empty(&self) -> bool {
@@ -46,13 +46,13 @@ impl<'a> TxIns<'a> {
     }
 }
 
-impl<'a> AsRef<[u8]> for TxIns<'a> {
+impl AsRef<[u8]> for TxIns<'_> {
     fn as_ref(&self) -> &[u8] {
         self.slice
     }
 }
 
-impl<'a> TxIns<'a> {}
+impl TxIns<'_> {}
 
 #[cfg(test)]
 mod test {

@@ -34,7 +34,7 @@ impl<'a> Visit<'a> for TxOuts<'a> {
         ))
     }
 }
-impl<'a> TxOuts<'a> {
+impl TxOuts<'_> {
     /// If there are no outputs.
     #[inline(always)]
     pub fn is_empty(&self) -> bool {
@@ -99,9 +99,9 @@ impl<'a> Iterator for TxOutIterator<'a> {
     }
 }
 
-impl<'a> ExactSizeIterator for TxOutIterator<'a> {}
+impl ExactSizeIterator for TxOutIterator<'_> {}
 
-impl<'a> AsRef<[u8]> for TxOuts<'a> {
+impl AsRef<[u8]> for TxOuts<'_> {
     fn as_ref(&self) -> &[u8] {
         self.slice
     }
@@ -110,9 +110,15 @@ impl<'a> AsRef<[u8]> for TxOuts<'a> {
 #[cfg(feature = "redb")]
 impl<'o> redb::RedbValue for TxOuts<'o> {
     // TODO fix where position once MSRV allows
-    type SelfType<'a> = TxOuts<'a> where Self: 'a;
+    type SelfType<'a>
+        = TxOuts<'a>
+    where
+        Self: 'a;
 
-    type AsBytes<'a> = &'a [u8] where Self: 'a;
+    type AsBytes<'a>
+        = &'a [u8]
+    where
+        Self: 'a;
 
     fn fixed_width() -> Option<usize> {
         None

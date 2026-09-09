@@ -15,7 +15,7 @@ pub struct Script<'a> {
 impl<'a> Parse<'a> for Script<'a> {
     #[inline(always)]
     /// Parse a script from the slice.
-    fn parse(slice: &'a [u8]) -> SResult<Self> {
+    fn parse(slice: &'a [u8]) -> SResult<'a, Self> {
         let mut consumed = 0;
         let n = scan_len(slice, &mut consumed)? as usize;
         let (script_bytes, remaining) = split_at_checked(slice, consumed.saturating_add(n))?;
@@ -28,14 +28,14 @@ impl<'a> Parse<'a> for Script<'a> {
         ))
     }
 }
-impl<'a> Script<'a> {
+impl Script<'_> {
     /// return the script bytes (exclude the compact int representing the length)
     pub fn script(&self) -> &[u8] {
         &self.slice[self.from..]
     }
 }
 
-impl<'a> AsRef<[u8]> for Script<'a> {
+impl AsRef<[u8]> for Script<'_> {
     fn as_ref(&self) -> &[u8] {
         self.slice
     }

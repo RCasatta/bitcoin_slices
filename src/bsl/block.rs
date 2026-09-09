@@ -34,7 +34,7 @@ impl<'a> Visit<'a> for Block<'a> {
     }
 }
 
-impl<'a> Block<'a> {
+impl Block<'_> {
     /// Returns the hash of this block
     #[cfg(feature = "bitcoin_hashes")]
     pub fn block_hash(&self) -> crate::bitcoin_hashes::sha256d::Hash {
@@ -62,7 +62,7 @@ impl<'a> Block<'a> {
     }
 }
 
-impl<'a> AsRef<[u8]> for Block<'a> {
+impl AsRef<[u8]> for Block<'_> {
     fn as_ref(&self) -> &[u8] {
         self.slice
     }

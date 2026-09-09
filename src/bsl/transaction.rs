@@ -136,7 +136,7 @@ impl<'a> Transaction<'a> {
     }
 }
 
-impl<'a> AsRef<[u8]> for Transaction<'a> {
+impl AsRef<[u8]> for Transaction<'_> {
     fn as_ref(&self) -> &[u8] {
         self.slice
     }
@@ -145,9 +145,15 @@ impl<'a> AsRef<[u8]> for Transaction<'a> {
 #[cfg(feature = "redb")]
 impl<'o> redb::RedbValue for Transaction<'o> {
     // TODO fix where position once MSRV allows
-    type SelfType<'a> = Transaction<'a> where Self: 'a;
+    type SelfType<'a>
+        = Transaction<'a>
+    where
+        Self: 'a;
 
-    type AsBytes<'a> = &'a [u8] where Self: 'a;
+    type AsBytes<'a>
+        = &'a [u8]
+    where
+        Self: 'a;
 
     fn fixed_width() -> Option<usize> {
         None

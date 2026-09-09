@@ -222,7 +222,7 @@ RUSTDOCFLAGS="--cfg docsrs" cargo +nightly doc --all-features --open
 
 ## MSRV
 
-Minimum Supported Rust Version of this crate is 1.74.0 (check `.github/workflows/ci.yml` for current CI configuration).
+Minimum Supported Rust Version of this crate is 1.85.0 (check `.github/workflows/ci.yml` for current CI configuration).
 
 
 

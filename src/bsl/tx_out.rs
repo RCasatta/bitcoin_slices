@@ -11,7 +11,7 @@ pub struct TxOut<'a> {
 }
 impl<'a> Parse<'a> for TxOut<'a> {
     #[inline(always)]
-    fn parse(slice: &'a [u8]) -> SResult<Self> {
+    fn parse(slice: &'a [u8]) -> SResult<'a, Self> {
         let value = read_u64(slice)?;
         let script = Script::parse(&slice[8..])?;
         let consumed = 8 + script.consumed();
@@ -24,7 +24,7 @@ impl<'a> Parse<'a> for TxOut<'a> {
         Ok(ParseResult::new(remaining, tx_out))
     }
 }
-impl<'a> TxOut<'a> {
+impl TxOut<'_> {
     /// Return the amount of this output (satoshi)
     pub fn value(&self) -> u64 {
         self.value
@@ -41,7 +41,7 @@ impl<'a> TxOut<'a> {
     }
 }
 
-impl<'a> AsRef<[u8]> for TxOut<'a> {
+impl AsRef<[u8]> for TxOut<'_> {
     fn as_ref(&self) -> &[u8] {
         self.slice
     }
@@ -50,9 +50,15 @@ impl<'a> AsRef<[u8]> for TxOut<'a> {
 #[cfg(feature = "redb")]
 impl<'o> redb::RedbValue for TxOut<'o> {
     // TODO fix where position once MSRV allows
-    type SelfType<'a> = TxOut<'a> where Self: 'a;
+    type SelfType<'a>
+        = TxOut<'a>
+    where
+        Self: 'a;
 
-    type AsBytes<'a> = &'a [u8] where Self: 'a;
+    type AsBytes<'a>
+        = &'a [u8]
+    where
+        Self: 'a;
 
     fn fixed_width() -> Option<usize> {
         None

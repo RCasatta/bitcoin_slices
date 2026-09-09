@@ -136,7 +136,7 @@ Default features: none (no_std by default)
 
 ## MSRV
 
-Minimum Supported Rust Version: 1.74.0 (defined in `rust-toolchain.toml`)
+Minimum Supported Rust Version: 1.85.0 (defined in `rust-toolchain.toml`)
 
 ## Important Implementation Notes
 
