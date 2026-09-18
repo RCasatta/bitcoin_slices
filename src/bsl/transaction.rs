@@ -20,11 +20,12 @@ impl<'a> Visit<'a> for Transaction<'a> {
     #[inline(always)]
     fn visit<'b, V: Visitor>(slice: &'a [u8], visit: &'b mut V) -> SResult<'a, Self> {
         let _version = read_i32(slice)?;
+        let after_version = &slice[4..];
         // A zero byte is the segwit marker, not an input-count callback.
-        if read_u8(&slice[4..])? == 0 {
-            let segwit_flag = read_u8(&slice[5..])?;
+        if read_u8(after_version)? == 0 {
+            let segwit_flag = read_u8(&after_version[1..])?;
             if segwit_flag == 1 {
-                let inputs = TxIns::visit(&slice[6..], visit)?;
+                let inputs = TxIns::visit(&after_version[2..], visit)?;
                 let outputs = TxOuts::visit(inputs.remaining(), visit)?;
                 let witnesses = Witnesses::visit(outputs.remaining(), inputs.parsed().n(), visit)?;
 
@@ -51,7 +52,7 @@ impl<'a> Visit<'a> for Transaction<'a> {
                 Err(Error::UnknownSegwitFlag(segwit_flag))
             }
         } else {
-            let inputs = TxIns::visit(&slice[4..], visit)?;
+            let inputs = TxIns::visit(after_version, visit)?;
             let outputs = TxOuts::visit(inputs.remaining(), visit)?;
             let _locktime = read_u32(outputs.remaining())?;
             let consumed = inputs.consumed() + outputs.consumed() + 8;
