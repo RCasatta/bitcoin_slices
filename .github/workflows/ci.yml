@@ -1,4 +1,11 @@
-on: [pull_request]
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+# rust-toolchain.toml pins 1.85.0 and takes precedence over `rustup default`
+# (which is what dtolnay/rust-toolchain sets), so every cargo invocation
+# below selects its toolchain explicitly with `cargo +<toolchain>`.
 
 jobs:
   build:
@@ -9,44 +16,87 @@ jobs:
       matrix:
         toolchain: ["1.85.0", "stable", "nightly"]
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
       - uses: dtolnay/rust-toolchain@master
         with:
           toolchain: ${{ matrix.toolchain }}
-      - run: cargo update -p cc --precise 1.0.28
-
-      - run: cargo build --all-features
-        if: ${{ matrix.toolchain == '1.85.0' || matrix.toolchain == 'stable' || matrix.toolchain == 'nightly' }}
-      
-        
+      - run: cargo +${{ matrix.toolchain }} build --all-features
 
   test:
     name: Test Suite
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
       - uses: dtolnay/rust-toolchain@stable
-      - run: cargo test --all-features
+      - run: cargo +stable test --all-features
+
+  feature-matrix:
+    name: Test features (MSRV)
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        features:
+          - ""
+          - "--features sha2"
+          - "--features bitcoin_hashes"
+          - "--features redb"
+          - "--features bitcoin"
+          - "--features slice_cache"
+          - "--features prometheus"
+          - "--all-features"
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@master
+        with:
+          toolchain: "1.85.0"
+      - run: cargo +1.85.0 test ${{ matrix.features }}
+
+  no_std:
+    name: no_std build
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        toolchain: ["1.85.0", "stable"]
+        features: ["", "--features sha2,bitcoin_hashes"]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@master
+        with:
+          toolchain: ${{ matrix.toolchain }}
+          targets: thumbv7m-none-eabi
+      - run: cargo +${{ matrix.toolchain }} build --no-default-features ${{ matrix.features }} --target thumbv7m-none-eabi
+
+  docs:
+    name: Docs (docs.rs config)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@nightly
+      - run: cargo +nightly doc --all-features --no-deps
+        env:
+          RUSTDOCFLAGS: "--cfg docsrs"
 
   lints:
     name: Lints
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
       - uses: dtolnay/rust-toolchain@master
         with:
           toolchain: "1.85.0"
           components: rustfmt, clippy
-      - run: cargo fmt --all -- --check
-      - run: cargo clippy -- -D warnings
+      - run: cargo +1.85.0 fmt --all -- --check
+      - run: cargo +1.85.0 clippy -- -D warnings
 
   bench:
     name: Bench Suite
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
       - uses: dtolnay/rust-toolchain@stable
-      - run: cargo bench --all-features
+      - run: cargo +stable bench --all-features
 
   fuzz:
     name: Fuzz
@@ -56,7 +106,7 @@ jobs:
       matrix:
         fuzz_target: ["block", "block_header", "len", "out_point", "script", "transaction", "tx_in", "tx_ins", "tx_out", "tx_outs", "witness", "witnesses"]
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
       - uses: dtolnay/rust-toolchain@nightly
       - run: rustup override set nightly
       - run: cargo install cargo-fuzz --version 0.13.2 --locked
