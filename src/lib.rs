@@ -44,8 +44,9 @@ pub use redb;
 #[cfg(feature = "bitcoin")]
 pub use bitcoin;
 
+/// Test fixtures shared by the unit tests (test builds only).
 #[cfg(test)]
-pub mod test_common {
+pub(crate) mod test_common {
     use hex_lit::hex;
 
     use crate::ParseResult;
@@ -55,11 +56,14 @@ pub mod test_common {
     pub const GENESIS_BLOCK: [u8;285] = hex!("0100000000000000000000000000000000000000000000000000000000000000000000003ba3edfd7a7b12b27ac72c3e67768f617fc81bc3888a51323a9fb8aa4b1e5e4a29ab5f49ffff001d1dac2b7c0101000000010000000000000000000000000000000000000000000000000000000000000000ffffffff4d04ffff001d0104455468652054696d65732030332f4a616e2f32303039204368616e63656c6c6f72206f6e206272696e6b206f66207365636f6e64206261696c6f757420666f722062616e6b73ffffffff0100f2052a01000000434104678afdb0fe5548271967f1a67130b7105cd6a828e03909a67962e0ea1f61deb649f6bc3f4cef38c4f35504e51ec112de5c384df7ba0b8d578a4c702b6bf11d5fac00000000");
 
     impl<T: AsRef<[u8]>> ParseResult<'_, T> {
+        /// Create a `ParseResult` with nothing remaining, i.e. `parsed` consumed the whole input.
         pub fn new_exact(parsed: T) -> Self {
             ParseResult::new(&[], parsed)
         }
     }
 
+    /// Reverse a 32-byte hash, to compare with the displayed (big-endian) hex form.
+    #[cfg(any(feature = "sha2", feature = "bitcoin_hashes"))]
     pub fn reverse(arr: [u8; 32]) -> [u8; 32] {
         let mut ret = arr;
         ret.reverse();

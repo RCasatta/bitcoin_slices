@@ -295,7 +295,7 @@ mod test {
         let expected_len = [1, 1, 3, 3, 5, 5, 9, 9, 5, 5];
         for (i, (s, (e, l))) in slices
             .iter()
-            .zip(expected.into_iter().zip(expected_len.into_iter()))
+            .zip(expected.into_iter().zip(expected_len))
             .enumerate()
         {
             let mut consumed = 0;

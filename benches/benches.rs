@@ -206,8 +206,8 @@ pub fn find_tx(c: &mut Criterion) {
         .bench_function("slices", |b| {
             let txid = bitcoin::Txid::from_str(TXID).unwrap();
             b.iter(|| {
-                let mut visitor = FindTransaction::new(txid.clone());
-                let _ = Block::visit(&mainnet_702861(), &mut visitor);
+                let mut visitor = FindTransaction::new(txid);
+                let _ = Block::visit(mainnet_702861(), &mut visitor);
                 let tx = visitor.tx_found().unwrap();
                 assert_eq!(tx.compute_txid(), txid);
                 core::hint::black_box(tx);
@@ -272,7 +272,7 @@ pub fn len(c: &mut Criterion) {
                 let mut value_ok = 0u64;
                 let mut consumed = 0;
                 for slice in slices {
-                    let len = scan_len(&slice[..], &mut consumed).unwrap();
+                    let len = scan_len(slice, &mut consumed).unwrap();
                     sum += len as u128;
                     value_ok += 1;
                     black_box(&len);
@@ -287,7 +287,7 @@ pub fn len(c: &mut Criterion) {
                 let mut value_ok = 0u64;
                 for slice in slices {
                     #[allow(deprecated)]
-                    let len = bitcoin_slices::bsl::parse_len(&slice[..]).unwrap();
+                    let len = bitcoin_slices::bsl::parse_len(slice).unwrap();
 
                     sum += len.n() as u128;
                     value_ok += 1;
@@ -314,7 +314,7 @@ pub fn script(c: &mut Criterion) {
     c.benchmark_group("script").bench_function("parse", |b| {
         b.iter(|| {
             for slice in slices {
-                let script = bsl::Script::parse(&slice[..]);
+                let script = bsl::Script::parse(slice);
                 black_box(&script);
             }
         })
@@ -337,7 +337,7 @@ pub fn witness(c: &mut Criterion) {
             ];
             b.iter(|| {
                 for slice in slices {
-                    let witnesses = bsl::Witness::parse(&slice[..]);
+                    let witnesses = bsl::Witness::parse(slice);
                     black_box(&witnesses);
                 }
             })
@@ -355,7 +355,7 @@ pub fn witness(c: &mut Criterion) {
             ];
             b.iter(|| {
                 for slice in slices {
-                    let witnesses = bsl::Witnesses::parse(&slice[..], 1);
+                    let witnesses = bsl::Witnesses::parse(slice, 1);
                     black_box(&witnesses);
                 }
             })

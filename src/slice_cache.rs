@@ -247,8 +247,10 @@ impl<K: Hash + PartialEq + Eq + core::fmt::Debug> SliceCache<K> {
 
 #[cfg(test)]
 mod tests {
+    #[cfg(feature = "bitcoin")]
     use hex_lit::hex;
 
+    #[cfg(feature = "bitcoin")]
     use crate::Parse;
 
     use super::*;
@@ -304,7 +306,7 @@ mod tests {
         let r = prometheus::default_registry();
 
         let mut cache = SliceCache::new(10);
-        cache.register_metric(&r).unwrap();
+        cache.register_metric(r).unwrap();
 
         let k1 = 0;
         let v1 = [1, 2];
@@ -317,7 +319,7 @@ mod tests {
 
         let metric_families = r.gather();
         encoder.encode(&metric_families, &mut buffer).unwrap();
-        let result = format!("{}", String::from_utf8(buffer.clone()).unwrap());
+        let result = String::from_utf8(buffer.clone()).unwrap();
         assert_eq!(result, "# HELP slice_cache Counters for cache Hit/Miss\n# TYPE slice_cache counter\nslice_cache{event=\"hit\"} 1\nslice_cache{event=\"miss\"} 1\n");
     }
 
@@ -331,7 +333,7 @@ mod tests {
         let txid = tx.txid();
 
         let mut cache: SliceCache<_> = SliceCache::new(100_000);
-        cache.insert(txid.clone(), &tx).unwrap();
+        cache.insert(txid, &tx).unwrap();
         let val = cache.get(&txid).unwrap();
 
         assert_eq!(val, segwit_tx);
@@ -359,7 +361,7 @@ mod tests {
         let mut total_removed = 0;
         let mut inserted = vec![];
         for (txid, tx) in txs.iter() {
-            let removed = cache.insert(txid.clone(), tx).unwrap();
+            let removed = cache.insert(*txid, tx).unwrap();
             total_removed += removed;
             inserted.push(txid);
             bytes_written += tx.len();
@@ -385,7 +387,7 @@ mod tests {
         let txid = tx.txid();
 
         let mut cache: SliceCache<_> = SliceCache::new(100_000);
-        cache.insert(txid.clone(), &tx).unwrap();
+        cache.insert(txid, &tx).unwrap();
         let val = cache.get_value::<Transaction>(&txid).unwrap();
 
         assert_eq!(val.as_ref(), segwit_tx);

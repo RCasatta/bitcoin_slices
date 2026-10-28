@@ -360,9 +360,9 @@ mod test {
     #[test]
     fn test_weight() {
         fn check_weight(tx_bytes: &[u8]) {
-            let tx = Transaction::parse(&tx_bytes[..]).unwrap().parsed_owned();
+            let tx = Transaction::parse(tx_bytes).unwrap().parsed_owned();
             let bitcoin_tx: bitcoin::Transaction =
-                bitcoin::consensus::deserialize(&tx_bytes[..]).unwrap();
+                bitcoin::consensus::deserialize(tx_bytes).unwrap();
             assert_eq!(tx.weight(), bitcoin_tx.weight().to_wu());
         }
 
