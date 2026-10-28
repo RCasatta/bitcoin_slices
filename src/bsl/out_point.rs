@@ -36,7 +36,7 @@ impl OutPoint<'_> {
 }
 
 #[cfg(feature = "redb")]
-impl<'o> redb::RedbValue for OutPoint<'o> {
+impl redb::RedbValue for OutPoint<'_> {
     // TODO fix where position once MSRV allows
     type SelfType<'a>
         = OutPoint<'a>
@@ -73,27 +73,27 @@ impl<'o> redb::RedbValue for OutPoint<'o> {
 }
 
 #[cfg(feature = "redb")]
-impl<'o> redb::RedbKey for OutPoint<'o> {
+impl redb::RedbKey for OutPoint<'_> {
     fn compare(data1: &[u8], data2: &[u8]) -> core::cmp::Ordering {
         data1.cmp(data2)
     }
 }
 
 #[cfg(feature = "bitcoin")]
-impl<'a> Into<bitcoin::OutPoint> for &OutPoint<'a> {
-    fn into(self) -> bitcoin::OutPoint {
+impl From<&OutPoint<'_>> for bitcoin::OutPoint {
+    fn from(value: &OutPoint<'_>) -> Self {
         use bitcoin::hashes::Hash;
         bitcoin::OutPoint {
-            txid: bitcoin::Txid::from_byte_array(self.txid().try_into().unwrap()),
-            vout: self.vout(),
+            txid: bitcoin::Txid::from_byte_array(value.txid().try_into().unwrap()),
+            vout: value.vout(),
         }
     }
 }
 
 #[cfg(feature = "bitcoin")]
-impl<'a> Into<bitcoin::OutPoint> for OutPoint<'a> {
-    fn into(self) -> bitcoin::OutPoint {
-        (&self).into()
+impl From<OutPoint<'_>> for bitcoin::OutPoint {
+    fn from(value: OutPoint<'_>) -> Self {
+        (&value).into()
     }
 }
 

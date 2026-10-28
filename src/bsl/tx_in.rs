@@ -31,7 +31,7 @@ impl<'a> Parse<'a> for TxIn<'a> {
 }
 impl TxIn<'_> {
     /// Returns the previous output index spent by this transaction input
-    pub fn prevout(&self) -> &OutPoint {
+    pub fn prevout(&self) -> &OutPoint<'_> {
         &self.prevout
     }
     /// Return the script sig of this transaction input

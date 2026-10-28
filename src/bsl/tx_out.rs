@@ -37,7 +37,7 @@ impl TxOut<'_> {
     #[cfg(feature = "bitcoin")]
     /// Return the script pubkey of this output as a bitcoin::Script
     pub fn as_bitcoin_script(&self) -> &bitcoin::Script {
-        &bitcoin::Script::from_bytes(self.script_pubkey())
+        bitcoin::Script::from_bytes(self.script_pubkey())
     }
 }
 
@@ -48,7 +48,7 @@ impl AsRef<[u8]> for TxOut<'_> {
 }
 
 #[cfg(feature = "redb")]
-impl<'o> redb::RedbValue for TxOut<'o> {
+impl redb::RedbValue for TxOut<'_> {
     // TODO fix where position once MSRV allows
     type SelfType<'a>
         = TxOut<'a>
@@ -87,19 +87,19 @@ impl<'o> redb::RedbValue for TxOut<'o> {
 }
 
 #[cfg(feature = "bitcoin")]
-impl<'a> Into<bitcoin::TxOut> for &TxOut<'a> {
-    fn into(self) -> bitcoin::TxOut {
+impl From<&TxOut<'_>> for bitcoin::TxOut {
+    fn from(value: &TxOut<'_>) -> Self {
         bitcoin::TxOut {
-            value: bitcoin::Amount::from_sat(self.value()),
-            script_pubkey: self.script_pubkey().to_vec().into(),
+            value: bitcoin::Amount::from_sat(value.value()),
+            script_pubkey: value.script_pubkey().to_vec().into(),
         }
     }
 }
 
 #[cfg(feature = "bitcoin")]
-impl<'a> Into<bitcoin::TxOut> for TxOut<'a> {
-    fn into(self) -> bitcoin::TxOut {
-        (&self).into()
+impl From<TxOut<'_>> for bitcoin::TxOut {
+    fn from(value: TxOut<'_>) -> Self {
+        (&value).into()
     }
 }
 

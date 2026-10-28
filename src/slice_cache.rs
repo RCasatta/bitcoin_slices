@@ -194,6 +194,11 @@ impl<K: Hash + PartialEq + Eq + core::fmt::Debug> SliceCache<K> {
         self.indexes.len()
     }
 
+    /// Return `true` if the cache contains no elements
+    pub fn is_empty(&self) -> bool {
+        self.indexes.is_empty()
+    }
+
     /// Return the average serialized size in bytes of the elements contained in the cache.
     /// Returns `0.0` when empty. Computing the average visits every cached entry.
     pub fn avg(&self) -> f64 {

@@ -54,7 +54,7 @@ impl Block<'_> {
     }
 
     /// Returns the header in this block
-    pub fn header(&self) -> &BlockHeader {
+    pub fn header(&self) -> &BlockHeader<'_> {
         &self.header
     }
 }

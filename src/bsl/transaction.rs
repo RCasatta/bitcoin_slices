@@ -149,7 +149,7 @@ impl AsRef<[u8]> for Transaction<'_> {
 }
 
 #[cfg(feature = "redb")]
-impl<'o> redb::RedbValue for Transaction<'o> {
+impl redb::RedbValue for Transaction<'_> {
     // TODO fix where position once MSRV allows
     type SelfType<'a>
         = Transaction<'a>
