@@ -109,7 +109,7 @@ impl AsRef<[u8]> for TxOuts<'_> {
 }
 
 #[cfg(feature = "redb")]
-impl<'o> redb::RedbValue for TxOuts<'o> {
+impl redb::RedbValue for TxOuts<'_> {
     // TODO fix where position once MSRV allows
     type SelfType<'a>
         = TxOuts<'a>

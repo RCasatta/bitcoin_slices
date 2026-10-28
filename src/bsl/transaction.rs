@@ -149,7 +149,7 @@ impl AsRef<[u8]> for Transaction<'_> {
 }
 
 #[cfg(feature = "redb")]
-impl<'o> redb::RedbValue for Transaction<'o> {
+impl redb::RedbValue for Transaction<'_> {
     // TODO fix where position once MSRV allows
     type SelfType<'a>
         = Transaction<'a>
@@ -360,9 +360,9 @@ mod test {
     #[test]
     fn test_weight() {
         fn check_weight(tx_bytes: &[u8]) {
-            let tx = Transaction::parse(&tx_bytes[..]).unwrap().parsed_owned();
+            let tx = Transaction::parse(tx_bytes).unwrap().parsed_owned();
             let bitcoin_tx: bitcoin::Transaction =
-                bitcoin::consensus::deserialize(&tx_bytes[..]).unwrap();
+                bitcoin::consensus::deserialize(tx_bytes).unwrap();
             assert_eq!(tx.weight(), bitcoin_tx.weight().to_wu());
         }
 

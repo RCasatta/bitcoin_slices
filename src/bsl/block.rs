@@ -54,7 +54,7 @@ impl Block<'_> {
     }
 
     /// Returns the header in this block
-    pub fn header(&self) -> &BlockHeader {
+    pub fn header(&self) -> &BlockHeader<'_> {
         &self.header
     }
 }
@@ -172,8 +172,8 @@ mod test {
             "416a5f96cb63e7649f6f272e7f82a43a97bcf6cfc46184c733344de96ff1e433",
         )
         .unwrap();
-        let mut visitor = crate::bsl::FindTransaction::new(txid.clone());
-        let _ = Block::visit(&mainnet_702861(), &mut visitor);
+        let mut visitor = crate::bsl::FindTransaction::new(txid);
+        let _ = Block::visit(mainnet_702861(), &mut visitor);
         let tx = visitor.tx_found().unwrap();
         assert_eq!(tx.compute_txid(), txid);
     }
