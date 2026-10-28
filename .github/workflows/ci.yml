@@ -86,9 +86,35 @@ jobs:
       - uses: dtolnay/rust-toolchain@master
         with:
           toolchain: "1.85.0"
-          components: rustfmt, clippy
+          components: rustfmt
       - run: cargo +1.85.0 fmt --all -- --check
-      - run: cargo +1.85.0 clippy -- -D warnings
+
+  clippy:
+    name: Clippy
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        toolchain: ["1.85.0"]
+        features:
+          - ""
+          - "--features sha2"
+          - "--features bitcoin_hashes"
+          - "--features redb"
+          - "--features bitcoin"
+          - "--features slice_cache"
+          - "--features prometheus"
+          - "--all-features"
+        include:
+          - toolchain: stable
+            features: "--all-features"
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@master
+        with:
+          toolchain: ${{ matrix.toolchain }}
+          components: clippy
+      - run: cargo +${{ matrix.toolchain }} clippy --all-targets ${{ matrix.features }} -- -D warnings
 
   bench:
     name: Bench Suite
